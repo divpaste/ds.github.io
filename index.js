@@ -29,13 +29,10 @@ addBtn.addEventListener("click",()=>{
 
 function vis(Node){
     let llarea = document.getElementById("ll-area");
-        // llarea.innerHTML += `
-        //     <div class="node justCreated">
-        //         <h2 class="nodeinfo data">DATA<br>[${Node.data}]</h2>
-        //             <h2 class="nodeinfo sep"></h2>
-        //             <h2 class="nodeinfo ptr">NEXT</h2>
-        //     </div>
-        //     `;
+
+    const existingNull = llarea.querySelector('.null');
+    if (existingNull) existingNull.remove();
+
     const newDiv = document.createElement("div");
     newDiv.classList.add("node", "justCreated");
     newDiv.innerHTML = `
@@ -44,10 +41,26 @@ function vis(Node){
         <h2 class="nodeinfo ptr">NEXT</h2>
     `;
     llarea.appendChild(newDiv);
-    const newHtmlNode = llarea.lastElementChild;
-    newHtmlNode.addEventListener("animationend", () => {
-    newHtmlNode.classList.remove("justCreated");
-    });
+
+    const arrowDiv = document.createElement("div");
+    arrowDiv.classList.add("arrow","justCreated");
+    arrowDiv.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="60" height="60">
+            <path d="m18.707 12.707-3 3a1 1 0 0 1-1.414-1.414L15.586 13H6a1 1 0 0 1 0-2h9.586l-1.293-1.293a1 1 0 0 1 1.414-1.414l3 3a1 1 0 0 1 0 1.414z" fill="#1c1b1e"/>
+        </svg>
+        `;
+    llarea.appendChild(arrowDiv);
+
+    const nullDiv = document.createElement("div");
+    nullDiv.classList.add("null","justCreated");
+    nullDiv.innerHTML = `
+        <h2 class="null">NULL</h2>
+    `;
+    llarea.appendChild(nullDiv);
+
+    // llarea.lastElementChild.addEventListener("animationend", () => {
+    // llarea.lastElementChild.classList.remove("justCreated");
+    // });
 }
 
 function printLL(){

@@ -1,18 +1,29 @@
 <!DOCTYPE html>
+
 <head>
-    <title>Main</title>
-<link rel="stylesheet" href="index.css">
-<script src="index.js"></script>
+    <title>Document</title>
+    <link rel="stylesheet" href="main.css">
 </head>
+
 <body>
-    <div id="canvas">
+    <div id="left">
+        <div id="ll-area">
+            <!-- <div class="node">
+                <h2 class="nodeinfo data">DATA<br>{}</h2>
+                <h2 class="nodeinfo sep"></h2>
+                <h2 class="nodeinfo ptr">NEXT</h2>
+            </div> -->
+            <!-- <div class="arrow">
+                <h2>=</h2>
+                <h2>></h2>
+            </div> -->
+        </div>
+        <div id="functions">
+            <button type="button" id="addBtn">Add Node</button>
+            <button type="button" onclick="printLL()" id="addBtn">LOL</button>
+        </div>
     </div>
-    <div id="terminal">
-        <form>
-            <input type="number" id="val" placeholder="Enter Value"><br><br>
-            <button type="button" onclick="createLL()">Add</button><br><br>
-            <button type="button" onclick="printLL()">Print</button>
-        </form>
-    </div>
+    <script src="main.js"></script>
 </body>
+
 </html>

@@ -6,59 +6,60 @@ class Node{
 }
 
 let start = null;
+let end = null;
 
-function createLL() {
-    let val = parseInt(document.getElementById("val").value);
-    let ptr = new Node(val);
+let addBtn = document.getElementById("addBtn");
 
-    if (start === null) {
-        start = ptr;
-    } else {
-        let temp = start;
-        while (temp.next != null) {
-            temp = temp.next;
-        }
-        temp.next = ptr;
+addBtn.addEventListener("click",()=>{
+    let data;
+    do{
+        data = prompt("Enter Int data:");
+    }while(data.trim()==="");
+    let newNode = new Node(data);
+    newNode.next=null;
+    if(start==null){
+        start = end = newNode;
     }
-
-    let existingNull = document.getElementById("null-marker");
-    if (existingNull) {
-        existingNull.remove();
+    else{
+        end.next = newNode;
+        end = newNode;
     }
+    vis(newNode);
+});
 
-    let box = document.createElement("div");
-    box.className = "box";
-    box.innerText = val;
-    document.getElementById("canvas").appendChild(box);
-
-    let arrow = document.createElement("img");
-    arrow.className = "arrow";
-    arrow.src = "arrow.png";
-    document.getElementById("canvas").appendChild(arrow);
-
-    let nullArrow = document.createElement("div");
-    nullArrow.id = "null-marker";
-    nullArrow.innerText = "NULL";
-    document.getElementById("canvas").appendChild(nullArrow);
-
-    document.getElementById("val").value = "";
+function vis(Node){
+    let llarea = document.getElementById("ll-area");
+        // llarea.innerHTML += `
+        //     <div class="node justCreated">
+        //         <h2 class="nodeinfo data">DATA<br>[${Node.data}]</h2>
+        //             <h2 class="nodeinfo sep"></h2>
+        //             <h2 class="nodeinfo ptr">NEXT</h2>
+        //     </div>
+        //     `;
+    const newDiv = document.createElement("div");
+    newDiv.classList.add("node", "justCreated");
+    newDiv.innerHTML = `
+        <h2 class="nodeinfo data">DATA<br>[${Node.data}]</h2>
+        <h2 class="nodeinfo sep"></h2>
+        <h2 class="nodeinfo ptr">NEXT</h2>
+    `;
+    llarea.appendChild(newDiv);
+    const newHtmlNode = llarea.lastElementChild;
+    newHtmlNode.addEventListener("animationend", () => {
+    newHtmlNode.classList.remove("justCreated");
+    });
 }
 
 function printLL(){
     let temp = start;
-    let str = "";
-    if(start===null){
-        alert("list is empty");
+    let result = "";
+    if(start==null){
+        console.log("emptylist");
         return;
     }
-    let n=0;
     while(temp!=null){
-        if(n!=0){
-            str = str + ",";
-        }
-        str = str + temp.data;
-        temp=temp.next;
-        n++;
+        result = result + temp.data + " -> " ;
+        temp = temp.next;
     }
-    alert(`List:${str}`);
+    console.log(result);
 }

@@ -11,12 +11,12 @@
     * {
       margin: 0;
       box-sizing: border-box;
+      overflow: hidden;
     }
 
     body {
       height: 100vh;
-      display: grid;
-      grid-template-columns: 70% 30%;
+      display: flex;
       font-family: 'Reddit Mono', monospace;
       background: #1b1b2f;
       color: #eaeaea;
@@ -24,13 +24,14 @@
 
     #left {
       position: relative;
-      display: grid;
-      grid-template-rows: 1fr 60px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
     }
 
     #ll-area {
       width: 100%;
-      height: 100%;
+      flex: 1;
       position: relative;
     }
 
@@ -40,16 +41,15 @@
     }
 
     .node rect {
-      fill: white;
-      stroke: #ffffff;
+      stroke: white;
       stroke-width: 2;
-      rx: 6;
-      ry: 6;
+      rx: 10;
+      ry: 10;
     }
 
     .node text {
-      fill: #101010;
-      font-size: 14px;
+      fill: black;
+      font-size: 15px;
       text-anchor: middle;
       dominant-baseline: middle;
       pointer-events: none;
@@ -57,129 +57,237 @@
 
     .link {
       fill: none;
-      stroke: #cccccc;
+      stroke: white;
       stroke-width: 1.5px;
       marker-end: url(#arrow);
     }
 
-    #controls-panel button {
-      background: linear-gradient(145deg, #3a3a7a, #2c2c59);
-      color: #f0f0f0;
-      border: none;
-      border-radius: 10px;
-      padding: 8px 14px;
-      cursor: pointer;
-      font-weight: 600;
+    /* Toggle button */
+    #controls-toggle {
+      position: absolute;
+      bottom: 15px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+    }
+
+    #toggle-btn {
       font-family: 'Reddit Mono', monospace;
-      box-shadow: 0 3px 6px rgba(0, 0, 0, 0.4), inset 0 -2px 4px rgba(255, 255, 255, 0.1);
-      transition: all 0.2s ease-in-out;
+      font-weight: 600;
+      background: #3b3b55;
+      color: #f5f5f5;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    #toggle-btn:hover {
+      background: #565678;
+    }
+
+    /* Controls panel */
+    #controls-panel {
+      position: absolute;
+      bottom: 60px;
+      left: 50%;
+      transform: translateX(-50%) scale(0.8);
+      transform-origin: bottom center;
+      background: #2a2a3d;
+      padding: 10px 15px;
+      border-radius: 15px;
+      box-shadow: 0px 0px 10px black;
+      display: grid;
+      grid-template-columns: auto auto auto;
+      gap: 15px;
+      font-family: 'Reddit Mono', monospace;
+      opacity: 0;
+      transition: transform 0.35s ease, opacity 0.35s ease;
+    }
+#controls-panel.show {
+  animation: growOut 0.45s ease forwards;
+}
+
+#controls-panel.hide {
+  animation: shrinkIn 0.45s ease forwards;
+}
+
+@keyframes growOut {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) scale(0.5); /* tiny at button */
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) scale(1); /* full size */
+  }
+}
+
+@keyframes shrinkIn {
+  from {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-50%) scale(0.5);
+  }
+}
+
+    #controls-panel fieldset {
+      border: 3px solid #121212;
+      border-radius: 10px;
+      padding: 12px;
+      min-width: 170px;
+    }
+
+    #controls-panel fieldset div {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    #controls-panel legend {
+      text-align: center;
+      color: #121212;
+      font-weight: bold;
+    }
+
+    #controls-panel input {
+      text-align: center;
+      width: 100%;
+      margin-bottom: 8px;
+      padding: 6px 10px;
+      border-radius: 8px;
+      border: none;
+      background: #1c1c28;
+      color: grey;
+      font-size: 14px;
+      font-family: Monospace;
+    }
+
+    #controls-panel button {
+      font-family: 'Reddit Mono', monospace;
+      font-weight: 600;
+      background: #3b3b55;
+      color: #f5f5f5;
+      border: none;
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 14px;
+      cursor: pointer;
+      margin: 3px;
+      width: calc(50% - 6px);
     }
 
     #controls-panel button:hover {
-      background: linear-gradient(145deg, #5a5ab0, #414182);
-      transform: translateY(-2px);
-      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.5), inset 0 -2px 4px rgba(255, 255, 255, 0.15);
+      background: #565678;
     }
 
     #controls-panel button:active {
-      transform: translateY(0);
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) inset;
+      background: #3b3b55;
+      color: #f5f5f5;
     }
 
-
-    #right {
-      background: #14142b;
-      border-left: 6px solid #0d0d1a;
-      display: grid;
-      grid-template-rows: 40px auto;
+    #controls-panel fieldset>button,
+    #Misc button {
+      width: calc(100% - 6px) !important;
     }
 
-    #heading {
-      background: #3f51b5;
-      color: white;
+    #Misc {
       display: flex;
-      align-items: center;
-      padding-left: 10px;
-      font-size: 18px;
-      font-weight: bold;
-      font-family: 'Reddit Mono', monospace;
+      justify-content: center;
+      flex-direction: column;
+      gap: 8px;
     }
 
-    #area {
-      margin: 5px;
-      overflow-y: auto;
+    #Misc input {
+      width: 100%;
+      margin: 0px;
     }
 
-    #code-area {
-      font-size: 16px;
-      font-family: 'Reddit Mono', monospace;
-      color: #cfd8dc;
-      line-height: 1.4;
-    }
-
-    .code-line {
-      padding: 2px 8px;
-    }
-
-    .code-line.highlight {
-      background: #ffee58;
-      color: #101010;
-    }
-
-    #toggle-code {
-      position: fixed;
-      top: 10px;
-      right: 10px;
-      background: linear-gradient(145deg, #3a3a7a, #2c2c59);
-      color: #f0f0f0;
-      border: none;
-      border-radius: 10px;
-      padding: 8px 14px;
-      cursor: pointer;
+    #Misc h3 {
+      color: #eaeaea;
       font-weight: 600;
-      font-family: 'Reddit Mono', monospace;
-      box-shadow: 0 3px 6px rgba(0, 0, 0, 0.4), inset 0 -2px 4px rgba(255, 255, 255, 0.1);
-      transition: all 0.2s ease-in-out;
-      z-index: 1000;
-    }
-
-    #toggle-code:hover {
-      background: linear-gradient(145deg, #5a5ab0, #414182);
-      transform: translateY(-2px);
-      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.5), inset 0 -2px 4px rgba(255, 255, 255, 0.15);
-    }
-
-    #toggle-code:active {
-      transform: translateY(0);
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) inset;
     }
   </style>
 </head>
 
 <body>
-  <button id="toggle-code">Code</button>
   <div id="left">
     <div id="ll-area">
-      <svg></svg>
+      <svg>
+        <defs>
+          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+            <circle cx="10" cy="10" r="1.5" fill="#333" />
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#grid)" />
+      </svg>
     </div>
-    <div id="controls-panel">
-      <button id="addBtn">Add Node</button>
-      <button id="renderBtn">Render Code</button>
-      <button id="up">↑ Up</button>
-      <button id="down">↓ Down</button>
-      <button id="zoom-in">+</button>
-      <button id="zoom-out">-</button>
-    </div>
-  </div>
 
-  <div id="right">
-    <div id="heading">CODE:</div>
-    <div id="area">
-      <div id="code-area"></div>
+    <!-- Toggle Button -->
+    <div id="controls-toggle">
+      <button id="toggle-btn">⚙️ Show Controls</button>
+    </div>
+
+    <!-- Control Panel -->
+    <div id="controls-panel">
+      <div id="Insert">
+        <fieldset>
+          <legend>Insert</legend>
+          <input type="text" id="nodeInput" placeholder="Enter value" autocomplete="off">
+          <div>
+            <button type="button" id="insertStartBtn">Start</button>
+            <button type="button" id="addBtn">End</button>
+          </div>
+          <div>
+            <button type="button">Before</button>
+            <button type="button">After</button>
+          </div>
+          <button type="button">As nth Node</button>
+        </fieldset>
+      </div>
+
+      <div id="Delete">
+        <fieldset>
+          <legend>Delete</legend>
+          <div><input type="text" placeholder="Enter value" autocomplete="off"></div>
+          <div>
+            <button type="button">Start</button>
+            <button type="button">End</button>
+          </div>
+          <div>
+            <button type="button">Before</button>
+            <button type="button">After</button>
+          </div>
+          <button type="button">As nth Node</button>
+        </fieldset>
+      </div>
+
+      <div id="Misc">
+        <div><button type="button">Render Code</button></div>
+        <div><button type="button" id="makeCircularBtn">Make Circular</button></div>
+        <input type="text" placeholder="Enter value" autocomplete="off">
+        <div><button type="button">Search</button></div>
+        <h3>Count: <span id="nodeCount">0</span></h3>
+      </div>
     </div>
   </div>
 
   <script>
+    /* Toggle Button Logic */
+    const toggleBtn = document.getElementById("toggle-btn");
+    const controlsPanel = document.getElementById("controls-panel");
+
+    toggleBtn.addEventListener("click", () => {
+      controlsPanel.classList.toggle("show");
+      toggleBtn.textContent = controlsPanel.classList.contains("show")
+        ? "❌ Hide Controls"
+        : "⚙️ Show Controls";
+    });
+
+    /* ==== D3 CODE ==== */
     const svg = d3.select("svg");
     const g = svg.append("g");
 
@@ -193,116 +301,156 @@
       .attr("orient", "auto")
       .append("path")
       .attr("d", "M0,-5L10,0L0,5")
-      .attr("fill", "#cccccc");
+      .attr("fill", "yellowgreen");
 
     let nodes = [];
     let links = [];
 
     const simulation = d3.forceSimulation(nodes)
-      .force("link", d3.forceLink(links).id(d => d.id).distance(120))
-      .force("charge", d3.forceManyBody().strength(-400))
-      .force("center", d3.forceCenter(window.innerWidth / 3, window.innerHeight / 2));
-
-    let nodeSel = g.selectAll(".node");
-    let linkSel = g.selectAll(".link");
+      .force("link", d3.forceLink(links).id(d => d.id).distance(150))
+      .force("charge", d3.forceManyBody().strength(-500))
+      .force("center", d3.forceCenter(window.innerWidth / 2, window.innerHeight / 2));
 
     function updateGraph() {
-      linkSel = linkSel.data(links);
-      linkSel.exit().remove();
-      linkSel = linkSel.enter()
-        .append("path")
-        .attr("class", "link")
-        .attr("fill", "none")
-        .attr("stroke", "#999")
-        .attr("stroke-width", 2)
-        .attr("marker-end", "url(#arrow)")   // only arrow at the end
-        .merge(linkSel);
+      let linkSel = g.selectAll(".link").data(links);
+      let nodeSel = g.selectAll(".node").data(nodes, d => d.id);
 
-      nodeSel = nodeSel.data(nodes, d => d.id);
+      linkSel.exit().remove();
       nodeSel.exit().remove();
 
-      const enter = nodeSel.enter().append("g").attr("class", "node")
-        .call(d3.drag()
-          .on("start", dragstarted)
-          .on("drag", dragged)
-          .on("end", dragended));
+      const nodeEnter = nodeSel.enter()
+        .append("g")
+        .attr("class", "node")
+        .call(
+          d3.drag()
+            .on("start", dragstarted)
+            .on("drag", dragged)
+            .on("end", dragended)
+        );
 
-      enter.append("rect")
-        .attr("width", d => Math.max(40, d.text.length * 9))
+      nodeEnter.append("rect")
+        .attr("class", "outer")
+        .attr("rx", 15).attr("ry", 15)
+        .attr("stroke-width", 2)
+        .attr("fill", "none")
+        .attr("width", d => Math.max(60, d.text.length * 8) + 20)
+        .attr("height", 80);
+
+      nodeEnter.append("rect")
+        .attr("class", "data-cell")
+        .attr("x", 10)
+        .attr("y", 10)
         .attr("height", 30)
-        .attr("x", d => -Math.max(40, d.text.length * 9) / 2)
-        .attr("y", -15);
+        .attr("rx", 5).attr("ry", 5)
+        .attr("fill", "white")
+        .attr("width", d => Math.max(60, d.text.length * 8));
 
-      enter.append("text").text(d => d.text);
+      nodeEnter.append("text")
+        .attr("class", "data-text")
+        .attr("y", 25)
+        .attr("text-anchor", "middle")
+        .attr("alignment-baseline", "middle")
+        .attr("fill", "red")
+        .attr("x", d => 10 + Math.max(60, d.text.length * 8) / 2)
+        .text(d => d.text);
 
-      nodeSel = enter.merge(nodeSel);
+      nodeEnter.append("rect")
+        .attr("class", "next-cell")
+        .attr("x", 10)
+        .attr("y", 45)
+        .attr("stroke", "white")
+        .attr("height", 25)
+        .attr("rx", 5).attr("ry", 5)
+        .attr("fill", "none")
+        .attr("width", d => Math.max(60, d.text.length * 8));
 
-      simulation.nodes(nodes).on("tick", () => {
-        linkSel.attr("d", d => {
-          const midX = (d.source.x + d.target.x) / 2;
-          const midY = (d.source.y + d.target.y) / 2 + 25; // offset below nodes
-          return `M${d.source.x},${d.source.y + 25} L${midX},${midY} L${d.target.x},${d.target.y + 25}`;
-        });
-        nodeSel.attr("transform", d => `translate(${d.x},${d.y})`);
-      });
+      const gap = 30;
 
-      // Inside updateGraph, after simulation tick update:
-      simulation.nodes(nodes).on("tick", () => {
-        linkSel.attr("d", d => {
-          const midX = (d.source.x + d.target.x) / 2;
-          const midY = (d.source.y + d.target.y) / 2 + 25;
-          return `M${d.source.x},${d.source.y + 25} L${midX},${midY} L${d.target.x},${d.target.y + 25}`;
-        });
-        nodeSel.attr("transform", d => `translate(${d.x},${d.y})`);
+      nodeEnter.append("circle")
+        .attr("cy", 58)
+        .attr("r", 5)
+        .attr("fill", "red")
+        .attr("cx", d => 10 + Math.max(60, d.text.length * 8) / 2 + gap / 2);
 
-        // Remove old pointers
-        g.selectAll(".start-pointer").remove();
-        g.selectAll(".end-pointer").remove();
+      nodeSel = nodeEnter.merge(nodeSel);
 
-        if (nodes.length > 0) {
-          // Start pointer
-          const startNode = nodes[0];
-          g.append("line")
-            .attr("class", "start-pointer")
-            .attr("x1", startNode.x)
-            .attr("y1", startNode.y + 60)
-            .attr("x2", startNode.x)
-            .attr("y2", startNode.y + 20)
-            .attr("stroke", "#eaeaea")
-            .attr("stroke-width", 2.5)
-            .attr("marker-end", "url(#arrow)");
+      linkSel = linkSel.enter()
+        .append("line")
+        .attr("class", "link")
+        .attr("stroke", "black")
+        .attr("stroke-width", 2)
+        .attr("marker-end", "url(#arrow)")
+        .merge(linkSel);
 
-          g.append("text")
-            .attr("class", "start-pointer")
-            .attr("x", startNode.x)
-            .attr("y", startNode.y + 70)
-            .attr("fill", "#eaeaea")
-            .attr("text-anchor", "middle")
-            .text("Start");
-
-          // End pointer
-          const endNode = nodes[nodes.length - 1];
-          g.append("line")
-            .attr("class", "end-pointer")
-            .attr("x1", endNode.x)
-            .attr("y1", endNode.y - 60)
-            .attr("x2", endNode.x)
-            .attr("y2", endNode.y - 20)
-            .attr("stroke", "#eaeaea")
-            .attr("stroke-width", 2.5)
-            .attr("marker-end", "url(#arrow)");
-
-          g.append("text")
-            .attr("class", "end-pointer")
-            .attr("x", endNode.x)
-            .attr("y", endNode.y - 70)
-            .attr("fill", "#eaeaea")
-            .attr("text-anchor", "middle")
-            .text("End");
-        }
-      });
+      simulation.nodes(nodes).on("tick", ticked);
       simulation.force("link").links(links);
       simulation.alpha(1).restart();
+
+      function ticked() {
+  const gap = 30;
+  const circleY = 58;
+  const circleX = d => 10 + Math.max(60, d.text.length * 8) / 2;
+
+  g.selectAll(".link")
+    .attr("x1", d => d.source.x + circleX(d.source) + gap / 2)
+    .attr("y1", d => d.source.y + circleY)
+    .attr("x2", d => d.target.x + circleX(d.target) - gap / 2)
+    .attr("y2", d => d.target.y + circleY);
+
+  g.selectAll(".node")
+    .attr("transform", d => `translate(${d.x},${d.y})`);
+
+  // Remove old pointers
+  g.selectAll(".start-pointer").remove();
+  g.selectAll(".end-pointer").remove();
+
+  if (nodes.length > 0) {
+    const startNode = nodes[0];
+    const endNode = nodes[nodes.length - 1];
+
+    const leftCircleX = circleX(startNode) - gap / 2;
+    const rightCircleX = circleX(endNode) + gap / 2;
+
+    // START pointer → from left side into first node
+    g.append("line")
+      .attr("class", "start-pointer")
+      .attr("x1", startNode.x + leftCircleX - 80) // a bit left
+      .attr("y1", startNode.y + circleY)
+      .attr("x2", startNode.x + leftCircleX)
+      .attr("y2", startNode.y + circleY)
+      .attr("stroke", "#eaeaea")
+      .attr("stroke-width", 2)
+      .attr("marker-end", "url(#arrow)");
+
+    g.append("text")
+      .attr("class", "start-pointer")
+      .attr("x", startNode.x + leftCircleX - 100)
+      .attr("y", startNode.y + circleY - 5)
+      .attr("fill", "#eaeaea")
+      .attr("text-anchor", "middle")
+      .text("Start");
+
+    // END pointer → from right side out of last node
+    g.append("line")
+      .attr("class", "end-pointer")
+      .attr("x1", endNode.x + rightCircleX)
+      .attr("y1", endNode.y + circleY)
+      .attr("x2", endNode.x + rightCircleX + 80)
+      .attr("y2", endNode.y + circleY)
+      .attr("stroke", "#eaeaea")
+      .attr("stroke-width", 2)
+      .attr("marker-end", "url(#arrow)");
+
+    g.append("text")
+      .attr("class", "end-pointer")
+      .attr("x", endNode.x + rightCircleX + 100)
+      .attr("y", endNode.y + circleY - 5)
+      .attr("fill", "#eaeaea")
+      .attr("text-anchor", "middle")
+      .text("End");
+  }
+}
+document.getElementById("nodeCount").textContent = nodes.length;
     }
 
     function dragstarted(event, d) { if (!event.active) simulation.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; }
@@ -312,85 +460,124 @@
     const zoom = d3.zoom().scaleExtent([0.3, 3]).on("zoom", (event) => { g.attr("transform", event.transform); });
     svg.call(zoom);
 
-    document.getElementById("zoom-in").onclick = () => svg.transition().call(zoom.scaleBy, 1.4);
-    document.getElementById("zoom-out").onclick = () => svg.transition().call(zoom.scaleBy, 0.6);
-
     let nextId = 0;
-    document.getElementById("addBtn").addEventListener("click", () => {
-      const data = prompt("Enter Int data:");
-      if (!data) return;
-      const newNode = { id: nextId++, text: data };
-      nodes.push(newNode);
-      if (nodes.length > 1) links.push({ source: nodes[nodes.length - 2], target: newNode });
-      updateGraph();
-    });
+    const input = document.getElementById("nodeInput");
+    const addStartBtn = document.getElementById("insertStartBtn");
+    const addBtn = document.getElementById("addBtn");
 
-    function getCode() {
-      return `void insertEnd(){
-  struct node *ptr,*temp=start;
-  ptr=(struct node*)malloc(sizeof(struct node));
-  if(ptr==NULL){
-    printf("Memory Allocation Failed");
-    return;
-  }
-  printf("Insert Value at End:");
-  scanf("%d",&ptr->data);
-  if(temp==NULL){
-    start=ptr;
-    ptr->next=NULL;
+    function addNodeEnd() {
+  const data = input.value.trim();
+  if (!data) return;
+
+  let newNode;
+  if (nodes.length === 0) {
+    newNode = {
+      id: nextId++,
+      text: data,
+      x: window.innerWidth / 3,
+      y: window.innerHeight / 2
+    };
+    nodes.push(newNode);
   } else {
-    while(temp->next!=NULL){
-      temp=temp->next;
+    const last = nodes[nodes.length - 1];
+    newNode = {
+      id: nextId++,
+      text: data,
+      x: last.x + 150,
+      y: last.y
+    };
+
+    if (isCircular) {
+      // Remove last → first circular link
+      links = links.filter(l => !(l.source === last && l.target === nodes[0]));
     }
-    temp->next=ptr;
-    ptr->next=NULL;
+
+    nodes.push(newNode);
+    links.push({ source: last, target: newNode });
+
+    if (isCircular) {
+      // Restore circular link
+      links.push({ source: newNode, target: nodes[0] });
+    }
   }
-}`.trim().split("\n");
+
+  updateGraph();
+  input.value = "";
+}
+
+function insertNodeStart() {
+  const data = input.value.trim();
+  if (!data) return;
+
+  let newNode;
+  if (nodes.length === 0) {
+    newNode = {
+      id: nextId++,
+      text: data,
+      x: window.innerWidth / 3,
+      y: window.innerHeight / 2
+    };
+    nodes.unshift(newNode);
+  } else {
+    const first = nodes[0];
+    const last = nodes[nodes.length - 1];
+    newNode = {
+      id: nextId++,
+      text: data,
+      x: first.x - 150,
+      y: first.y
+    };
+
+    if (isCircular) {
+      // Remove last → first circular link
+      links = links.filter(l => !(l.source === last && l.target === first));
     }
 
-    function renderCode() {
-      const area = document.getElementById("code-area");
-      area.innerHTML = "";
-      const lines = getCode();
-      for (let line of lines) {
-        const div = document.createElement("div");
-        div.textContent = line;
-        div.classList.add("code-line");
-        area.appendChild(div);
-      }
-      curr = -1;
+    nodes.unshift(newNode);
+    links.push({ source: newNode, target: first });
+
+    if (isCircular) {
+      // Restore circular link
+      links.push({ source: nodes[nodes.length - 1], target: newNode });
     }
+  }
 
-    let curr = -1;
-    function selectLine() {
-      const lines = document.querySelectorAll(".code-line");
-      lines.forEach(l => l.classList.remove("highlight"));
-      if (curr >= 0 && curr < lines.length) {
-        lines[curr].classList.add("highlight");
-        lines[curr].scrollIntoView({ block: "center", behavior: "smooth" });
-      }
-    }
+  updateGraph();
+  input.value = "";
+}
 
-    document.getElementById("renderBtn").addEventListener("click", renderCode);
-    document.getElementById("down").addEventListener("click", () => { if (curr < getCode().length - 1) { curr++; selectLine(); } });
-    document.getElementById("up").addEventListener("click", () => { if (curr > 0) { curr--; selectLine(); } });
+    addStartBtn.addEventListener("click", insertNodeStart);
+    addBtn.addEventListener("click", addNodeEnd);
 
-    const body = document.querySelector("body");
-    const rightPanel = document.getElementById("right");
-    const toggleBtn = document.getElementById("toggle-code");
-
-    let codeVisible = true;
-    toggleBtn.addEventListener("click", () => {
-      codeVisible = !codeVisible;
-      if (codeVisible) {
-        rightPanel.style.display = "grid";
-        body.style.gridTemplateColumns = "70% 30%";
-      } else {
-        rightPanel.style.display = "none";
-        body.style.gridTemplateColumns = "100%";
+    input.addEventListener("keypress", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        addNodeEnd();
       }
     });
+
+    const toggleCircularBtn = document.getElementById("makeCircularBtn");
+let isCircular = false;
+
+toggleCircularBtn.addEventListener("click", () => {
+  if (!isCircular) {
+    // Make it circular
+    if (nodes.length > 1) {
+      links = links.filter(l => !(l.source === nodes[nodes.length - 1] && l.target === nodes[0]));
+      links.push({ source: nodes[nodes.length - 1], target: nodes[0] });
+      updateGraph();
+      isCircular = true;
+      toggleCircularBtn.textContent = "Unmake Circular";
+    }
+  } else {
+    // Break the circular link
+    links = links.filter(l => !(l.source === nodes[nodes.length - 1] && l.target === nodes[0]));
+    updateGraph();
+    isCircular = false;
+    toggleCircularBtn.textContent = "Make Circular";
+  }
+});
+
   </script>
 </body>
-
 </html>

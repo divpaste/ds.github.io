@@ -259,7 +259,7 @@
             <button type="button" id="insertBefore">Before</button>
             <button type="button" id="insertAfter">After</button>
           </div>
-          <button type="button">As nth Node</button>
+          <button type="button" id="insertAt">As nth Node</button>
         </fieldset>
       </div>
 
@@ -482,6 +482,7 @@ document.getElementById("nodeCount").textContent = nodes.length;
     const addBtn = document.getElementById("addBtn");
     const insertBeforeBtn = document.getElementById("insertBefore");
     const insertAfterBtn = document.getElementById("insertAfter");
+    const insertAtBtn = document.getElementById("insertAt");
 
 const searchInput = document.getElementById("searchInput"); // also give the input an id
 const searchBtn = document.getElementById("searchBtn");
@@ -606,105 +607,177 @@ function insertNodeStart() {
 
 
 // Insert Before
+// Recalculate horizontal positions
+function updateNodePositions() {
+  const startX = window.innerWidth / 3;
+  const y = window.innerHeight / 2;
+  const gap = 150;
+  nodes.forEach((d, i) => {
+    d.x = startX + i * gap;
+    d.y = y;
+  });
+}
+
+// Add node at end
+function addNodeEnd() {
+  const data = input.value.trim();
+  if (!data) return;
+
+  const newNode = { id: nextId++, text: data };
+  nodes.push(newNode);
+
+  // Add link from previous node
+  if(nodes.length > 1){
+    const prevNode = nodes[nodes.length - 2];
+    links.push({ source: prevNode, target: newNode });
+  }
+
+  // Handle circular
+  if(isCircular && nodes.length > 1){
+    links = links.filter(l => !(l.source === nodes[nodes.length-1] && l.target === nodes[0]));
+    links.push({ source: nodes[nodes.length-1], target: nodes[0] });
+  }
+
+  updateNodePositions();
+  updateGraph();
+  input.value = "";
+}
+
+// Add node at start
+function insertNodeStart() {
+  const data = input.value.trim();
+  if(!data) return;
+
+  const newNode = { id: nextId++, text: data };
+  nodes.unshift(newNode);
+
+  // Update links
+  links = [];
+  for(let i=0; i<nodes.length-1; i++){
+    links.push({ source: nodes[i], target: nodes[i+1] });
+  }
+
+  // Handle circular
+  if(isCircular && nodes.length > 1){
+    links.push({ source: nodes[nodes.length-1], target: nodes[0] });
+  }
+
+  updateNodePositions();
+  updateGraph();
+  input.value = "";
+}
+
+// Insert before a given node
 function insertBeforeNode() {
   const key = prompt("Enter the value of the node before which to insert:");
-  if (!key) return;
+  if(!key) return;
 
   const index = nodes.findIndex(n => n.text === key);
-  if (index === -1) {
+  if(index === -1){
     alert("Key not found");
     return;
   }
 
   const data = input.value.trim();
-  if (!data) {
+  if(!data){
     alert("Enter a value in the input field");
     return;
   }
 
-  const newNode = { id: nextId++, text: data, x: 0, y: 0 };
+  const newNode = { id: nextId++, text: data };
+  nodes.splice(index, 0, newNode);
 
-  if (index === 0) {
-    // Handle circular link removal if needed
-    if (isCircular && nodes.length > 0) {
-        const lastNode = nodes[nodes.length - 1];
-        links = links.filter(l => !(l.source === lastNode && l.target === nodes[0]));
-    }
+  // Rebuild links
+  links = [];
+  for(let i=0; i<nodes.length-1; i++){
+    links.push({ source: nodes[i], target: nodes[i+1] });
+  }
 
-    // Insert at start
-    nodes.unshift(newNode);
+  if(isCircular && nodes.length > 1){
+    links.push({ source: nodes[nodes.length-1], target: nodes[0] });
+  }
 
-    // Add link from new node → old first node
-    links.push({ source: newNode, target: nodes[1] });
-
-    // Restore circular link if circular
-    if (isCircular && nodes.length > 1) {
-        const lastNode = nodes[nodes.length - 1];
-        links.push({ source: lastNode, target: nodes[0] });
-    }
-}
-
-
-  input.value = "";
+  updateNodePositions();
   updateGraph();
+  input.value = "";
 }
 
-
+// Insert after a given node
 function insertAfterNode() {
   const key = prompt("Enter the value of the node after which to insert:");
-  if (!key) return;
+  if(!key) return;
 
   const index = nodes.findIndex(n => n.text === key);
-  if (index === -1) {
+  if(index === -1){
     alert("Key not found");
     return;
   }
 
   const data = input.value.trim();
+  if(!data){
+    alert("Enter a value in the input field");
+    return;
+  }
+
+  const newNode = { id: nextId++, text: data };
+  nodes.splice(index+1, 0, newNode);
+
+  // Rebuild links
+  links = [];
+  for(let i=0; i<nodes.length-1; i++){
+    links.push({ source: nodes[i], target: nodes[i+1] });
+  }
+
+  if(isCircular && nodes.length > 1){
+    links.push({ source: nodes[nodes.length-1], target: nodes[0] });
+  }
+
+  updateNodePositions();
+  updateGraph();
+  input.value = "";
+}
+
+function insertAt() {
+  const data = input.value.trim(); // node value
   if (!data) {
     alert("Enter a value in the input field");
     return;
   }
 
-  const newNode = { id: nextId++, text: data, x: 0, y: 0 };
+  const pos = parseInt(prompt(`Enter the position (1 to ${nodes.length + 1}):`), 10);
 
-  // Remove old circular link if needed
-  if (isCircular && nodes.length > 0) {
-    links = links.filter(l => !(l.source === nodes[nodes.length - 1] && l.target === nodes[0]));
+  if (isNaN(pos) || pos < 1 || pos > nodes.length + 1) {
+    alert(`Invalid position. Current list size: ${nodes.length}`);
+    return;
   }
 
-  if (index === nodes.length - 1) {
-    // Insert after last node
-    nodes.push(newNode);
-    links.push({ source: nodes[index], target: newNode });
-  } else {
-    // Insert in middle
-    const targetNode = nodes[index];
-    const nextNode = nodes[index + 1];
+  const newNode = { id: nextId++, text: data };
 
-    nodes.splice(index + 1, 0, newNode);
+  // Convert 1-based position to 0-based index for splice
+  nodes.splice(pos - 1, 0, newNode);
 
-    // Remove old link between targetNode and nextNode
-    links = links.filter(l => !(l.source === targetNode && l.target === nextNode));
-
-    // Add links: targetNode -> newNode -> nextNode
-    links.push({ source: targetNode, target: newNode });
-    links.push({ source: newNode, target: nextNode });
+  // Rebuild links
+  links = [];
+  for (let i = 0; i < nodes.length - 1; i++) {
+    links.push({ source: nodes[i], target: nodes[i + 1] });
   }
 
-  // Re-add circular link if circular and list has >1 node
   if (isCircular && nodes.length > 1) {
     links.push({ source: nodes[nodes.length - 1], target: nodes[0] });
   }
 
-  input.value = "";
+  updateNodePositions();
   updateGraph();
+
+  input.value = "";
 }
+
 
     addStartBtn.addEventListener("click", insertNodeStart);
     addBtn.addEventListener("click", addNodeEnd);
     insertBeforeBtn.addEventListener("click", insertBeforeNode);
     insertAfterBtn.addEventListener("click", insertAfterNode);
+    insertAtBtn.addEventListener("click", insertAt);
 
     input.addEventListener("keypress", (event) => {
       if (event.key === "Enter") {

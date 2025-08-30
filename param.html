@@ -12,6 +12,7 @@
       margin: 0;
       box-sizing: border-box;
       overflow: hidden;
+      user-select:none;
     }
 
     body {
@@ -71,22 +72,24 @@
       z-index: 10;
     }
 
-    #toggle-btn {
-      font-family: 'Reddit Mono', monospace;
-      font-weight: 600;
-      background: #3b3b55;
-      color: #f5f5f5;
-      border: none;
-      border-radius: 8px;
-      padding: 8px 16px;
-      font-size: 14px;
-      cursor: pointer;
-    }
+    #toggle-btn,
+#reset-btn {
+  font-family: 'Reddit Mono', monospace;
+  font-weight: 600;
+  background: #3b3b55;
+  color: #f5f5f5;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  margin-left: 5px; /* optional spacing */
+}
 
-    #toggle-btn:hover {
-      background: #565678;
-    }
-
+#toggle-btn:hover,
+#reset-btn:hover {
+  background: #565678;
+}
     /* Controls panel */
     #controls-panel {
       position: absolute;
@@ -239,6 +242,7 @@
     <!-- Toggle Button -->
     <div id="controls-toggle">
       <button id="toggle-btn">⚙️ Show Controls</button>
+      <button id="reset-btn">🔄 Reset Graph</button>
     </div>
 
     <!-- Control Panel -->
@@ -252,8 +256,8 @@
             <button type="button" id="addBtn">End</button>
           </div>
           <div>
-            <button type="button">Before</button>
-            <button type="button">After</button>
+            <button type="button" id="insertBefore">Before</button>
+            <button type="button" id="insertAfter">After</button>
           </div>
           <button type="button">As nth Node</button>
         </fieldset>
@@ -476,9 +480,12 @@ document.getElementById("nodeCount").textContent = nodes.length;
     const input = document.getElementById("nodeInput");
     const addStartBtn = document.getElementById("insertStartBtn");
     const addBtn = document.getElementById("addBtn");
+    const insertBeforeBtn = document.getElementById("insertBefore");
+    const insertAfterBtn = document.getElementById("insertAfter");
 
 const searchInput = document.getElementById("searchInput"); // also give the input an id
 const searchBtn = document.getElementById("searchBtn");
+
 
 searchBtn.addEventListener("click", () => {
   const value = searchInput.value.trim();
@@ -566,45 +573,138 @@ function insertNodeStart() {
   const data = input.value.trim();
   if (!data) return;
 
-  let newNode;
+  const newNode = { id: nextId++, text: data, x: 0, y: 0 };
+
   if (nodes.length === 0) {
-    newNode = {
-      id: nextId++,
-      text: data,
-      x: window.innerWidth / 3,
-      y: window.innerHeight / 2
-    };
     nodes.unshift(newNode);
   } else {
     const first = nodes[0];
     const last = nodes[nodes.length - 1];
-    newNode = {
-      id: nextId++,
-      text: data,
-      x: first.x - 150,
-      y: first.y
-    };
 
     if (isCircular) {
-      // Remove last → first circular link
+      // Remove old last→first circular link
       links = links.filter(l => !(l.source === last && l.target === first));
     }
 
+    // Insert at start
     nodes.unshift(newNode);
-    links.push({ source: newNode, target: first });
 
-    if (isCircular) {
-      // Restore circular link
-      links.push({ source: nodes[nodes.length - 1], target: newNode });
-    }
+    // Add link new→old first
+    links.push({ source: newNode, target: first });
+  }
+
+  // Re-add circular link from last→first
+  if (isCircular && nodes.length > 1) {
+    const lastNode = nodes[nodes.length - 1];
+    links = links.filter(l => !(l.source === lastNode && l.target === nodes[0]));
+    links.push({ source: lastNode, target: nodes[0] });
   }
 
   updateGraph();
   input.value = "";
 }
 
+
+// Insert Before
+function insertBeforeNode() {
+  const key = prompt("Enter the value of the node before which to insert:");
+  if (!key) return;
+
+  const index = nodes.findIndex(n => n.text === key);
+  if (index === -1) {
+    alert("Key not found");
+    return;
+  }
+
+  const data = input.value.trim();
+  if (!data) {
+    alert("Enter a value in the input field");
+    return;
+  }
+
+  const newNode = { id: nextId++, text: data, x: 0, y: 0 };
+
+  if (index === 0) {
+    // Handle circular link removal if needed
+    if (isCircular && nodes.length > 0) {
+        const lastNode = nodes[nodes.length - 1];
+        links = links.filter(l => !(l.source === lastNode && l.target === nodes[0]));
+    }
+
+    // Insert at start
+    nodes.unshift(newNode);
+
+    // Add link from new node → old first node
+    links.push({ source: newNode, target: nodes[1] });
+
+    // Restore circular link if circular
+    if (isCircular && nodes.length > 1) {
+        const lastNode = nodes[nodes.length - 1];
+        links.push({ source: lastNode, target: nodes[0] });
+    }
+}
+
+
+  input.value = "";
+  updateGraph();
+}
+
+
+function insertAfterNode() {
+  const key = prompt("Enter the value of the node after which to insert:");
+  if (!key) return;
+
+  const index = nodes.findIndex(n => n.text === key);
+  if (index === -1) {
+    alert("Key not found");
+    return;
+  }
+
+  const data = input.value.trim();
+  if (!data) {
+    alert("Enter a value in the input field");
+    return;
+  }
+
+  const newNode = { id: nextId++, text: data, x: 0, y: 0 };
+
+  // Remove old circular link if needed
+  if (isCircular && nodes.length > 0) {
+    links = links.filter(l => !(l.source === nodes[nodes.length - 1] && l.target === nodes[0]));
+  }
+
+  if (index === nodes.length - 1) {
+    // Insert after last node
+    nodes.push(newNode);
+    links.push({ source: nodes[index], target: newNode });
+  } else {
+    // Insert in middle
+    const targetNode = nodes[index];
+    const nextNode = nodes[index + 1];
+
+    nodes.splice(index + 1, 0, newNode);
+
+    // Remove old link between targetNode and nextNode
+    links = links.filter(l => !(l.source === targetNode && l.target === nextNode));
+
+    // Add links: targetNode -> newNode -> nextNode
+    links.push({ source: targetNode, target: newNode });
+    links.push({ source: newNode, target: nextNode });
+  }
+
+  // Re-add circular link if circular and list has >1 node
+  if (isCircular && nodes.length > 1) {
+    links.push({ source: nodes[nodes.length - 1], target: nodes[0] });
+  }
+
+  input.value = "";
+  updateGraph();
+}
+
     addStartBtn.addEventListener("click", insertNodeStart);
     addBtn.addEventListener("click", addNodeEnd);
+    insertBeforeBtn.addEventListener("click", insertBeforeNode);
+    insertAfterBtn.addEventListener("click", insertAfterNode);
 
     input.addEventListener("keypress", (event) => {
       if (event.key === "Enter") {
@@ -624,7 +724,7 @@ toggleCircularBtn.addEventListener("click", () => {
       links.push({ source: nodes[nodes.length - 1], target: nodes[0] });
       updateGraph();
       isCircular = true;
-      toggleCircularBtn.textContent = "Unmake Circular";
+      toggleCircularBtn.textContent = "Make Linear";
     }
   } else {
     // Break the circular link
@@ -634,6 +734,27 @@ toggleCircularBtn.addEventListener("click", () => {
     toggleCircularBtn.textContent = "Make Circular";
   }
 });
+
+const resetBtn = document.getElementById("reset-btn");
+
+resetBtn.addEventListener("click", () => {
+  // Clear nodes and links
+  nodes = [];
+  links = [];
+  nextId = 0;
+
+  // Remove all elements from SVG group
+  g.selectAll("*").remove();
+
+  // Reset simulation
+  simulation.nodes(nodes);
+  simulation.force("link").links(links);
+  simulation.alpha(1).restart();
+
+  // Reset node count
+  document.getElementById("nodeCount").textContent = 0;
+});
+
 
   </script>
 </body>

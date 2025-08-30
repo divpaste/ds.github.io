@@ -268,14 +268,14 @@
           <legend>Delete</legend>
           <div><input type="text" placeholder="Enter value" autocomplete="off"></div>
           <div>
-            <button type="button">Start</button>
-            <button type="button">End</button>
+            <button type="button" id="deleteStartBtn">Start</button>
+            <button type="button" id="deleteEndBtn">End</button>
           </div>
           <div>
-            <button type="button">Before</button>
-            <button type="button">After</button>
+            <button type="button" id="deleteBeforeBtn">Before</button>
+            <button type="button" id="deleteAfterBtn">After</button>
           </div>
-          <button type="button">As nth Node</button>
+          <button type="button" id="deleteAtBtn">As nth Node</button>
         </fieldset>
       </div>
 
@@ -530,82 +530,6 @@ searchBtn.addEventListener("click", () => {
   searchInput.value = "";
 });
 
-    function addNodeEnd() {
-  const data = input.value.trim();
-  if (!data) return;
-
-  let newNode;
-  if (nodes.length === 0) {
-    newNode = {
-      id: nextId++,
-      text: data,
-      x: window.innerWidth / 3,
-      y: window.innerHeight / 2
-    };
-    nodes.push(newNode);
-  } else {
-    const last = nodes[nodes.length - 1];
-    newNode = {
-      id: nextId++,
-      text: data,
-      x: last.x + 150,
-      y: last.y
-    };
-
-    if (isCircular) {
-      // Remove last → first circular link
-      links = links.filter(l => !(l.source === last && l.target === nodes[0]));
-    }
-
-    nodes.push(newNode);
-    links.push({ source: last, target: newNode });
-
-    if (isCircular) {
-      // Restore circular link
-      links.push({ source: newNode, target: nodes[0] });
-    }
-  }
-
-  updateGraph();
-  input.value = "";
-}
-
-function insertNodeStart() {
-  const data = input.value.trim();
-  if (!data) return;
-
-  const newNode = { id: nextId++, text: data, x: 0, y: 0 };
-
-  if (nodes.length === 0) {
-    nodes.unshift(newNode);
-  } else {
-    const first = nodes[0];
-    const last = nodes[nodes.length - 1];
-
-    if (isCircular) {
-      // Remove old last→first circular link
-      links = links.filter(l => !(l.source === last && l.target === first));
-    }
-
-    // Insert at start
-    nodes.unshift(newNode);
-
-    // Add link new→old first
-    links.push({ source: newNode, target: first });
-  }
-
-  // Re-add circular link from last→first
-  if (isCircular && nodes.length > 1) {
-    const lastNode = nodes[nodes.length - 1];
-    links = links.filter(l => !(l.source === lastNode && l.target === nodes[0]));
-    links.push({ source: lastNode, target: nodes[0] });
-  }
-
-  updateGraph();
-  input.value = "";
-}
-
-
 // Insert Before
 // Recalculate horizontal positions
 function updateNodePositions() {
@@ -626,16 +550,15 @@ function addNodeEnd() {
   const newNode = { id: nextId++, text: data };
   nodes.push(newNode);
 
-  // Add link from previous node
-  if(nodes.length > 1){
-    const prevNode = nodes[nodes.length - 2];
-    links.push({ source: prevNode, target: newNode });
+  // Rebuild all links
+  links = [];
+  for (let i = 0; i < nodes.length - 1; i++) {
+    links.push({ source: nodes[i], target: nodes[i + 1] });
   }
 
   // Handle circular
-  if(isCircular && nodes.length > 1){
-    links = links.filter(l => !(l.source === nodes[nodes.length-1] && l.target === nodes[0]));
-    links.push({ source: nodes[nodes.length-1], target: nodes[0] });
+  if (isCircular && nodes.length > 1) {
+    links.push({ source: nodes[nodes.length - 1], target: nodes[0] });
   }
 
   updateNodePositions();
@@ -772,12 +695,125 @@ function insertAt() {
   input.value = "";
 }
 
+// Delete node at start
+function deleteNodeStart() {
+  if (nodes.length === 0) return alert("List is empty");
+
+  nodes.shift(); // remove first node
+
+  // Rebuild links
+  links = [];
+  for (let i = 0; i < nodes.length - 1; i++) {
+    links.push({ source: nodes[i], target: nodes[i + 1] });
+  }
+
+  // Handle circular
+  if (isCircular && nodes.length > 1) {
+    links.push({ source: nodes[nodes.length - 1], target: nodes[0] });
+  }
+
+  updateNodePositions();
+  updateGraph();
+}
+
+// Delete node at end
+function deleteNodeEnd() {
+  if (nodes.length === 0) return alert("List is empty");
+
+  nodes.pop(); // remove last node
+
+  // Rebuild links
+  links = [];
+  for (let i = 0; i < nodes.length - 1; i++) {
+    links.push({ source: nodes[i], target: nodes[i + 1] });
+  }
+
+  // Handle circular
+  if (isCircular && nodes.length > 1) {
+    links.push({ source: nodes[nodes.length - 1], target: nodes[0] });
+  }
+
+  updateNodePositions();
+  updateGraph();
+}
+
+// Delete node before a given node
+function deleteBeforeNode() {
+  const key = prompt("Enter the value of the node BEFORE which to delete:");
+  if (!key) return;
+
+  const index = nodes.findIndex(n => n.text === key);
+  if (index === -1) return alert("Key not found");
+  if (index === 0) return alert("No node before the first node");
+
+  nodes.splice(index - 1, 1); // remove the node before
+
+  // Rebuild links
+  links = [];
+  for (let i = 0; i < nodes.length - 1; i++) {
+    links.push({ source: nodes[i], target: nodes[i + 1] });
+  }
+  if (isCircular && nodes.length > 1) links.push({ source: nodes[nodes.length - 1], target: nodes[0] });
+
+  updateNodePositions();
+  updateGraph();
+}
+
+// Delete node after a given node
+function deleteAfterNode() {
+  const key = prompt("Enter the value of the node AFTER which to delete:");
+  if (!key) return;
+
+  const index = nodes.findIndex(n => n.text === key);
+  if (index === -1) return alert("Key not found");
+  if (index === nodes.length - 1) return alert("No node after the last node");
+
+  nodes.splice(index + 1, 1); // remove the node after
+
+  // Rebuild links
+  links = [];
+  for (let i = 0; i < nodes.length - 1; i++) {
+    links.push({ source: nodes[i], target: nodes[i + 1] });
+  }
+  if (isCircular && nodes.length > 1) links.push({ source: nodes[nodes.length - 1], target: nodes[0] });
+
+  updateNodePositions();
+  updateGraph();
+}
+
+// Delete node at nth position (1-based)
+function deleteAt() {
+  if (nodes.length === 0) return alert("List is empty");
+
+  const pos = parseInt(prompt(`Enter the position to delete (1 to ${nodes.length}):`), 10);
+  if (isNaN(pos) || pos < 1 || pos > nodes.length) {
+    return alert(`Invalid position. Current list size: ${nodes.length}`);
+  }
+
+  nodes.splice(pos - 1, 1); // remove nth node
+
+  // Rebuild links
+  links = [];
+  for (let i = 0; i < nodes.length - 1; i++) {
+    links.push({ source: nodes[i], target: nodes[i + 1] });
+  }
+  if (isCircular && nodes.length > 1) links.push({ source: nodes[nodes.length - 1], target: nodes[0] });
+
+  updateNodePositions();
+  updateGraph();
+}
 
     addStartBtn.addEventListener("click", insertNodeStart);
     addBtn.addEventListener("click", addNodeEnd);
     insertBeforeBtn.addEventListener("click", insertBeforeNode);
     insertAfterBtn.addEventListener("click", insertAfterNode);
     insertAtBtn.addEventListener("click", insertAt);
+
+    deleteStartBtn.addEventListener("click", deleteNodeStart);
+    deleteEndBtn.addEventListener("click", deleteNodeEnd);
+    deleteBeforeBtn.addEventListener("click", deleteBeforeNode);
+    deleteAfterBtn.addEventListener("click", deleteAfterNode);
+    deleteAtBtn.addEventListener("click", deleteAt);  
 
     input.addEventListener("keypress", (event) => {
       if (event.key === "Enter") {

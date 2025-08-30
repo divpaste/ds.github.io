@@ -210,6 +210,16 @@
       color: #eaeaea;
       font-weight: 600;
     }
+
+    .node.highlight rect.data-cell {
+  fill: yellow;
+}
+
+.node.highlight text.data-text {
+  fill: black;
+  font-weight: bold;
+}
+
   </style>
 </head>
 
@@ -268,8 +278,8 @@
       <div id="Misc">
         <div><button type="button">Render Code</button></div>
         <div><button type="button" id="makeCircularBtn">Make Circular</button></div>
-        <input type="text" placeholder="Enter value" autocomplete="off">
-        <div><button type="button">Search</button></div>
+        <input type="text" placeholder="Enter value" autocomplete="off" id="searchInput">
+        <div><button type="button" id="searchBtn">Search</button></div>
         <h3>Count: <span id="nodeCount">0</span></h3>
       </div>
     </div>
@@ -466,6 +476,51 @@ document.getElementById("nodeCount").textContent = nodes.length;
     const input = document.getElementById("nodeInput");
     const addStartBtn = document.getElementById("insertStartBtn");
     const addBtn = document.getElementById("addBtn");
+
+const searchInput = document.getElementById("searchInput"); // also give the input an id
+const searchBtn = document.getElementById("searchBtn");
+
+searchBtn.addEventListener("click", () => {
+  const value = searchInput.value.trim();
+  if (!value) return;
+
+  // Clear any previous highlights and markers
+  g.selectAll(".node").classed("highlight", false);
+  g.selectAll(".highlight-marker").remove();
+
+  const index = nodes.findIndex(n => n.text === value);
+  const node = nodes.find(n => n.text === value);
+
+  if (node) {
+    // Highlight the found node
+    g.selectAll(".node")
+      .filter(d => d.id === node.id)
+      .classed("highlight", true);
+
+    // Add position marker above the node
+    const gap = 30;
+    const circleY = 58;
+    const circleX = 10 + Math.max(60, node.text.length * 8) / 2;
+
+    g.append("text")
+      .attr("class", "highlight-marker")
+      .attr("x", node.x + circleX)
+      .attr("y", node.y - 10)
+      .attr("text-anchor", "middle")
+      .attr("fill", "yellow")
+      .attr("font-weight", "bold")
+      .text(`Pos: ${index+1}`);
+
+    // Remove highlight and marker after 3.5 seconds
+    setTimeout(() => {
+      g.selectAll(".node").classed("highlight", false);
+      g.selectAll(".highlight-marker").remove();
+    }, 2000);
+  } else {
+    alert(`Value "${value}" not present in the list`);
+  }
+  searchInput.value = "";
+});
 
     function addNodeEnd() {
   const data = input.value.trim();

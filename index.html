@@ -201,9 +201,26 @@
       margin: 0px;
     }
 
-    #Misc h3 {
-      color: #eaeaea;
+    #clear-canvas {
+      background-color: #b22222;
+      color: #fff;
+    }
+
+    #clear-canvas:hover {
+      background-color: #8b1a1a;
+    }
+
+    #node-count-feed {
+      position: fixed;
+      bottom: 15px;
+      right: 20px;
+      font-size: 15px;
       font-weight: 600;
+      font-family: 'Reddit Mono', monospace;
+      color: #eaeaea;
+      pointer-events: none;
+      background: transparent;
+      display: none;
     }
 
     .node.highlight rect.data-cell {
@@ -213,6 +230,49 @@
     .node.highlight text.data-text {
       fill: black;
       font-weight: bold;
+    }
+
+    #status-feed {
+      position: fixed;
+      bottom: 15px;
+      /* stick to bottom */
+      left: 20px;
+      /* stick to left */
+      width: auto;
+      overflow: hidden;
+      border-radius: 10px;
+      padding: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      line-height: 1.4;
+      font-family: 'Reddit Mono', monospace;
+      color: #eaeaea;
+      pointer-events: none;
+    }
+
+    .status-msg {
+      opacity: 1;
+      transition: opacity 0.4s ease;
+    }
+
+    .status-msg.fade-out {
+      opacity: 0;
+    }
+
+
+    .status-error {
+      color: #ff4d4d;
+      /* softer red, readable on dark bg */
+    }
+
+    .status-info {
+      color: #ffffff;
+      /* medium blue */
+    }
+
+    .status-success {
+      color: #4dff88;
+      /* teal-green */
     }
   </style>
 
@@ -229,11 +289,9 @@
         <rect width="100%" height="100%" fill="url(#grid)" />
       </svg>
     </div>
-
     <div id="floating-buttons-wrapper">
       <div id="floating-controls">
         <button id="toggle-controls" class="floating-btn" style="border:none">↑ Show Controls</button>
-        <button id="clear-canvas" class="floating-btn" style="border:none">Clear Canvas</button>
       </div>
     </div>
 
@@ -251,7 +309,7 @@
               <button type="button" id="insertBefore">Before</button>
               <button type="button" id="insertAfter">After</button>
             </div>
-            <button type="button" id="insertAt">As nth Node</button>
+            <button type="button" id="insertAt">As n<sup>th</sup> Node</button>
           </fieldset>
         </div>
 
@@ -267,21 +325,24 @@
               <button type="button" id="deleteBeforeBtn">Before</button>
               <button type="button" id="deleteAfterBtn">After</button>
             </div>
-            <button type="button" id="deleteAtBtn">As nth Node</button>
+            <button type="button" id="deleteAtBtn">n<sup>th</sup> Node</button>
           </fieldset>
         </div>
 
         <div id="Misc">
-          <div><button type="button">Render Code</button></div>
-          <div><button type="button" id="makeCircularBtn">Make Circular</button></div>
-          <input type="text" placeholder="Enter value" autocomplete="off" id="searchInput">
-          <div><button type="button" id="searchBtn">Search</button></div>
-          <h3>Count: <span id="nodeCount">0</span></h3>
+          <div><button style="color: #ff4d4d" id="clear-canvas">Clear Canvas</button></div>
+          <div><button type="button" id="makeCircularBtn">Circular</button></div>
+          <fieldset>
+            <legend>Search</legend>
+            <div><input type="text" placeholder="Enter value" autocomplete="off" id="searchInput"></div>
+            <div><button type="button" id="searchBtn">Search</button></div>
+          </fieldset>
         </div>
       </div>
     </div>
+    <div id="status-feed"></div>
+    <div id="node-count-feed">Count: <span id="nodeCount">0</span></div>
   </div>
-
   <script>
     document.addEventListener('DOMContentLoaded', () => {
 
@@ -357,7 +418,7 @@
         nodeEnter.append("circle")
           .attr("cy", 58)
           .attr("r", 5)
-          .attr("fill", "red")
+          .attr("fill", "#ff4d4d")
           .attr("cx", d => 10 + Math.max(60, d.text.length * 8) / 2 + gap / 2);
 
         nodeSel = nodeEnter.merge(nodeSel);
@@ -435,8 +496,6 @@
               .text("End");
           }
         }
-
-        document.getElementById("nodeCount").textContent = nodes.length;
       }
 
       function dragstarted(event, d) {
@@ -476,7 +535,10 @@
       // Define the search function
       const performSearch = () => {
         const value = searchInput.value.trim();
-        if (!value) return;
+        if (!value) {
+          logStatus("Cannot search for an empty value", "error");
+          return;
+        }
 
         g.selectAll(".node").classed("highlight", false);
         g.selectAll(".highlight-marker").remove();
@@ -500,20 +562,42 @@
               .attr("text-anchor", "middle")
               .attr("fill", "rgb(255, 255, 143)")
               .attr("font-weight", "bold")
-              .text(`Pos: ${index + 1}`);
+              .style("opacity", 1)
+              .text(`Index: ${index + 1}`)
+              .transition()
+              .duration(2000)
+              .remove();
           });
 
-          setTimeout(() => {
-            g.selectAll(".node").classed("highlight", false);
-            g.selectAll(".highlight-marker").remove();
-          }, 2000);
+          // Flash the matched nodes (rect/circle) instead of just fading out
+          g.selectAll(".node.highlight").select("rect, circle")
+            .transition()
+            .duration(400)
+            .style("opacity", 0.3)
+            .transition()
+            .duration(400)
+            .style("opacity", 1)
+            .transition()
+            .duration(400)
+            .style("opacity", 0.3)
+            .transition()
+            .duration(400)
+            .style("opacity", 1)
+            .on("end", function () {
+              d3.select(this.parentNode).classed("highlight", false);
+            });
 
+          logStatus(
+            `Found ${matchingNodes.length} ${matchingNodes.length === 1 ? "instance" : "instances"} of "${value}"`,
+            "success"
+          );
         } else {
-          alert(`Value "${value}" not present in the list`);
+          logStatus(`"${value}" not present`, "error");
         }
 
         searchInput.value = "";
       };
+
 
       // Event listener for the search button click
       searchBtn.addEventListener("click", performSearch);
@@ -538,8 +622,10 @@
 
       function addNodeEnd() {
         const data = input.value.trim();
-        if (!data) return;
-
+        if (!data) {
+          logStatus("Cannot add empty node", "error");
+          return;
+        }
         const newNode = { id: nextId++, text: data };
         nodes.push(newNode);
         links = [];
@@ -550,15 +636,19 @@
         if (isCircular && nodes.length > 1) {
           links.push({ source: nodes[nodes.length - 1], target: nodes[0] });
         }
-
+        logStatus(`Node "${data}" added at the end`, "success");
         updateNodePositions();
         updateGraph();
+        updateNodeCount();
         input.value = "";
       }
 
       function insertNodeStart() {
         const data = input.value.trim();
-        if (!data) return;
+        if (!data) {
+          logStatus("Cannot add empty node", "error");
+          return;
+        }
 
         const newNode = { id: nextId++, text: data };
         nodes.unshift(newNode);
@@ -570,9 +660,10 @@
         if (isCircular && nodes.length > 1) {
           links.push({ source: nodes[nodes.length - 1], target: nodes[0] });
         }
-
+        logStatus(`Node "${data}" added at the start`, "success");
         updateNodePositions();
         updateGraph();
+        updateNodeCount();
         input.value = "";
       }
 
@@ -582,13 +673,13 @@
 
         const index = nodes.findIndex(n => n.text === key);
         if (index === -1) {
-          alert("Key not found");
+          logStatus("Key not found", "error");
           return;
         }
 
         const data = input.value.trim();
         if (!data) {
-          alert("Enter a value in the input field");
+          logStatus("Cannot add empty node", "error");
           return;
         }
 
@@ -602,9 +693,10 @@
         if (isCircular && nodes.length > 1) {
           links.push({ source: nodes[nodes.length - 1], target: nodes[0] });
         }
-
+        logStatus(`Node "${data}" added before "${key}"`, "success");
         updateNodePositions();
         updateGraph();
+        updateNodeCount();
         input.value = "";
       }
 
@@ -614,13 +706,13 @@
 
         const index = nodes.findIndex(n => n.text === key);
         if (index === -1) {
-          alert("Key not found");
+          logStatus("Key not found", "error");
           return;
         }
 
         const data = input.value.trim();
         if (!data) {
-          alert("Enter a value in the input field");
+          logStatus("Cannot add empty node", "error");
           return;
         }
 
@@ -634,23 +726,24 @@
         if (isCircular && nodes.length > 1) {
           links.push({ source: nodes[nodes.length - 1], target: nodes[0] });
         }
-
+        logStatus(`Node "${data}" added after "${key}"`, "success");
         updateNodePositions();
         updateGraph();
+        updateNodeCount();
         input.value = "";
       }
 
       function insertAt() {
         const data = input.value.trim();
         if (!data) {
-          alert("Enter a value in the input field");
+          logStatus("Cannot add empty node", "error");
           return;
         }
 
-        const pos = parseInt(prompt(`Enter the position (1 to ${nodes.length + 1}):`), 10);
+        const pos = parseInt(prompt(`Enter the index (1 to ${nodes.length + 1}):`), 10);
 
         if (isNaN(pos) || pos < 1 || pos > nodes.length + 1) {
-          alert(`Invalid position. Current list size: ${nodes.length}`);
+          logStatus(`Invalid index. Current list size: ${nodes.length}`, "error");
           return;
         }
 
@@ -664,15 +757,19 @@
         if (isCircular && nodes.length > 1) {
           links.push({ source: nodes[nodes.length - 1], target: nodes[0] });
         }
-
+        logStatus(`Node "${data}" added at index ${pos}`, "success");
         updateNodePositions();
         updateGraph();
+        updateNodeCount();
         input.value = "";
       }
 
       function deleteNodeStart() {
-        if (nodes.length === 0) return alert("List is empty");
-        nodes.shift();
+        if (nodes.length === 0) {
+          logStatus("List is empty", "error");
+          return;
+        }
+        const deletedNode = nodes.shift();
         links = [];
         for (let i = 0; i < nodes.length - 1; i++) {
           links.push({ source: nodes[i], target: nodes[i + 1] });
@@ -680,13 +777,18 @@
         if (isCircular && nodes.length > 1) {
           links.push({ source: nodes[nodes.length - 1], target: nodes[0] });
         }
+        logStatus(`Node "${deletedNode.text}" deleted from the start`, "success");
         updateNodePositions();
         updateGraph();
+        updateNodeCount();
       }
 
       function deleteNodeEnd() {
-        if (nodes.length === 0) return alert("List is empty");
-        nodes.pop();
+        if (nodes.length === 0) {
+          logStatus("List is empty", "error");
+          return;
+        }
+        const deletedNode = nodes.pop();
         links = [];
         for (let i = 0; i < nodes.length - 1; i++) {
           links.push({ source: nodes[i], target: nodes[i + 1] });
@@ -694,56 +796,80 @@
         if (isCircular && nodes.length > 1) {
           links.push({ source: nodes[nodes.length - 1], target: nodes[0] });
         }
+        logStatus(`Node "${deletedNode.text}" deleted from the end`, "success");
         updateNodePositions();
         updateGraph();
+        updateNodeCount();
       }
 
       function deleteBeforeNode() {
-        const key = prompt("Enter the value of the node BEFORE which to delete:");
+        const key = prompt("Enter the value of the node before which to delete:");
         if (!key) return;
         const index = nodes.findIndex(n => n.text === key);
-        if (index === -1) return alert("Key not found");
-        if (index === 0) return alert("No node before the first node");
-        nodes.splice(index - 1, 1);
+        if (index === -1) {
+          logStatus("Key not found", "error");
+          return;
+        }
+        if (index === 0) {
+          logStatus("No node before the first node", "error");
+          return;
+        }
+        const deletedNode = nodes.splice(index - 1, 1)[0];
         links = [];
         for (let i = 0; i < nodes.length - 1; i++) {
           links.push({ source: nodes[i], target: nodes[i + 1] });
         }
         if (isCircular && nodes.length > 1) links.push({ source: nodes[nodes.length - 1], target: nodes[0] });
+        logStatus(`Node "${deletedNode.text}" deleted before "${key}"`, "success");
         updateNodePositions();
         updateGraph();
+        updateNodeCount();
       }
 
       function deleteAfterNode() {
-        const key = prompt("Enter the value of the node AFTER which to delete:");
+        const key = prompt("Enter the value of the node after which to delete:");
         if (!key) return;
         const index = nodes.findIndex(n => n.text === key);
-        if (index === -1) return alert("Key not found");
-        if (index === nodes.length - 1) return alert("No node after the last node");
-        nodes.splice(index + 1, 1);
+        if (index === -1) {
+          logStatus("Key not found", "error");
+          return;
+        }
+        if (index === nodes.length - 1) {
+          logStatus("No node after the last node", "error");
+          return;
+        }
+        const deletedNode = nodes.splice(index + 1, 1)[0];
         links = [];
         for (let i = 0; i < nodes.length - 1; i++) {
           links.push({ source: nodes[i], target: nodes[i + 1] });
         }
         if (isCircular && nodes.length > 1) links.push({ source: nodes[nodes.length - 1], target: nodes[0] });
+        logStatus(`Node "${deletedNode.text}" deleted after "${key}"`, "success");
         updateNodePositions();
         updateGraph();
+        updateNodeCount();
       }
 
       function deleteAt() {
-        if (nodes.length === 0) return alert("List is empty");
-        const pos = parseInt(prompt(`Enter the position to delete (1 to ${nodes.length}):`), 10);
-        if (isNaN(pos) || pos < 1 || pos > nodes.length) {
-          return alert(`Invalid position. Current list size: ${nodes.length}`);
+        if (nodes.length === 0) {
+          logStatus("List is empty", "error");
+          return;
         }
-        nodes.splice(pos - 1, 1);
+        const pos = parseInt(prompt(`Enter the index to delete (1 to ${nodes.length}):`), 10);
+        if (isNaN(pos) || pos < 1 || pos > nodes.length) {
+          logStatus(`Invalid index. Current list size: ${nodes.length}`, "error");
+          return;
+        }
+        const deletedNode = nodes.splice(pos - 1, 1)[0];
         links = [];
         for (let i = 0; i < nodes.length - 1; i++) {
           links.push({ source: nodes[i], target: nodes[i + 1] });
         }
         if (isCircular && nodes.length > 1) links.push({ source: nodes[nodes.length - 1], target: nodes[0] });
+        logStatus(`Node "${deletedNode.text}" deleted from index ${pos}`, "success");
         updateNodePositions();
         updateGraph();
+        updateNodeCount();
       }
 
       addStartBtn.addEventListener("click", insertNodeStart);
@@ -776,6 +902,9 @@
         }
         if (isCircular && nodes.length > 1) {
           links.push({ source: nodes[nodes.length - 1], target: nodes[0] });
+          logStatus("List: Circular", "info");
+        } else {
+          logStatus("List: Linear", "info");
         }
         updateGraph();
       });
@@ -799,10 +928,83 @@
         g.selectAll("*").remove();
         simulation.nodes(nodes);
         simulation.force("link").links(links);
+        updateNodeCount();
         simulation.alpha(1).restart();
         document.getElementById("nodeCount").textContent = 0;
+        logStatus("Canvas cleared", "info");
       });
+
+      function logStatus(msg, type = "info", timeout = 4000) {
+        const feed = document.getElementById("status-feed");
+        const entry = document.createElement("div");
+        entry.classList.add("status-msg");
+        if (type === "error") entry.classList.add("status-error");
+        if (type === "success") entry.classList.add("status-success");
+        if (type === "info") entry.classList.add("status-info");
+        entry.textContent = `${msg}`;
+
+        feed.appendChild(entry);
+        feed.scrollTop = feed.scrollHeight; // auto scroll
+
+        // fade then remove
+        setTimeout(() => {
+          entry.classList.add("fade-out");
+          setTimeout(() => entry.remove(), 500); // match CSS transition
+        }, timeout);
+      }
+      logStatus("Welcome! Use the controls to manipulate a linked list.", "info", 6000);
+
+      // Handle double middle click to fit all nodes in view
+      svg.on("mousedown", (event) => {
+        if (event.button === 1 && event.detail === 2) { // middle button double click
+          event.preventDefault();
+
+          if (nodes.length === 0) return;
+
+          // compute bounding box of all nodes
+          const minX = d3.min(nodes, d => d.x);
+          const maxX = d3.max(nodes, d => d.x + Math.max(60, d.text.length * 8) + 20);
+          const minY = d3.min(nodes, d => d.y);
+          const maxY = d3.max(nodes, d => d.y + 80);
+
+          const bounds = [[minX, minY], [maxX, maxY]];
+          const width = bounds[1][0] - bounds[0][0];
+          const height = bounds[1][1] - bounds[0][1];
+
+          const svgWidth = svg.node().clientWidth;
+          const svgHeight = svg.node().clientHeight;
+
+          const scale = Math.min(
+            svgWidth / (width + 100),
+            svgHeight / (height + 100),
+            3 // respect max zoom
+          );
+
+          const translateX = (svgWidth - scale * (bounds[0][0] + bounds[1][0])) / 2;
+          const translateY = (svgHeight - scale * (bounds[0][1] + bounds[1][1])) / 2;
+
+          const t = d3.zoomIdentity.translate(translateX, translateY).scale(scale);
+
+          svg.transition()
+            .duration(750)
+            .call(zoom.transform, t);
+        }
+      });
+
+      function updateNodeCount() {
+        const countFeed = document.getElementById("node-count-feed");
+        const countSpan = document.getElementById("nodeCount");
+        if (nodes.length === 0) {
+          countFeed.style.display = "none";
+        } else {
+          countFeed.style.display = "block";
+          countSpan.textContent = nodes.length;
+        }
+      }
+
+
     });
   </script>
 </body>
+
 </html>

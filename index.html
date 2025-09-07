@@ -5,1255 +5,194 @@
   <meta charset="UTF-8">
   <title>Linked List Visualizer</title>
   <script src="https://d3js.org/d3.v7.min.js"></script>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Reddit+Mono:wght@200..900&display=swap');
-
-    * {
-      margin: 0;
-      box-sizing: border-box;
-      user-select: none;
-    }
-
-    body {
-      height: 100vh;
-      display: flex;
-      font-family: 'Reddit Mono', monospace;
-      background: #1b1b2f;
-      color: #eaeaea;
-      overflow: hidden;
-    }
-
-    #ll-area {
-      width: 100%;
-      flex: 1;
-      position: relative;
-    }
-
-    svg {
-      width: 100%;
-      height: 100%;
-    }
-
-    .node rect {
-      stroke: white;
-      stroke-width: 2;
-      rx: 10;
-      ry: 10;
-    }
-
-    .node text {
-      fill: black;
-      font-size: 15px;
-      text-anchor: middle;
-      dominant-baseline: middle;
-      pointer-events: none;
-    }
-
-    .link {
-      fill: none;
-      stroke: white;
-      stroke-width: 1.5px;
-      marker-end: url(#arrow);
-    }
-
-    /* Container for the floating buttons */
-#floating-buttons-wrapper {
-  position: fixed;
-  bottom: 25px;
-  left: 50%;
-  transform: translateX(-50%) translateY(10px);
-  transition: transform 0.3s ease;
-  z-index: 50;
-}
-
-#floating-sidebar-wrapper {
-  position: fixed;
-  top: 25px;
-  right: 25px;
-  transform: translateX(0); /* start at right:25px */
-  transition: transform 0.3s ease;
-  z-index: 50;
-}
-
-.sidebar-row {
-  display: flex;
-  gap: 10px; /* spacing between buttons */
-}
-
-.sidebar-row button {
-  flex: 1; /* make both buttons take equal width */
-  text-align: center;
-}
-
-/* Move button up when sidebar is open */
-#floating-sidebar-wrapper.top {
-  transform: translateX(-350px); /* match new width */
-}
-
-/* Sidebar panel */
-#sidebar-wrapper {
-  position: fixed;
-  top: 0;
-  right: -350px; /* wider sidebar */
-  height: 100vh;
-  width: 350px;
-  background: #2a2a3d;
-  border-left: 2px solid #121212;
-  display: flex;
-  flex-direction: column;
-  padding: 20px;
-  gap: 20px;
-  transition: right 0.3s ease;
-  z-index: 49;
-  overflow-y:auto;
-}
-
-.sidebar-fieldset {
-  border: 2px solid #121212;
-  border-radius: 10px;
-  padding: 15px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.sidebar-fieldset legend {
-  color: #121212;
-  font-weight: bold;
-  text-align: center;
-}
-
-.sidebar-btn-group button {
-  font-family: 'Reddit Mono', monospace;
-  font-weight: 600;
-  background: #3b3b55;
-  color: #f5f5f5;
-  border: none;
-  border-radius: 8px;
-  padding: 8px 10px;
-  font-size: 14px;
-  cursor: default;
-  width: 100%; /* full width like control panel buttons */
-  white-space: nowrap;
-}
-
-.sidebar-btn-group button:hover {
-  background: #565678;
-}
-
-/* Active state */
-#sidebar-wrapper.active {
-  right: 0;
-}
-
-/* Sidebar panel buttons */
-#sidebar-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-#sidebar-panel button {
-  font-family: 'Reddit Mono', monospace;
-  font-weight: 600;
-  background: #3b3b55;
-  color: #f5f5f5;
-  border: none;
-  border-radius: 8px;
-  padding: 10px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-#sidebar-panel button:hover {
-  background: #565678;
-}
-
-#floating-buttons-wrapper.top {
-  transform: translateX(-50%) translateY(-220px);
-}
-
-
-    /* The flex container for the buttons themselves */
-    #floating-controls {
-      display: flex;
-      gap: 12px;
-    }
-
-    .floating-btn {
-      background: rgba(42, 42, 61, 0);
-      color: #eaeaea;
-      font-family: 'Reddit Mono', monospace;
-      padding: 10px;
-      margin: 0 20px;
-      font-size: 15px;
-      font-weight: 600;
-      border-radius: 20px;
-      cursor: pointer;
-      transition: color 0.1s ease, transform 0.1s ease;
-      backdrop-filter: blur(6px);
-    }
-
-    .floating-btn:hover {
-      color: rgba(86, 86, 120);
-    }
-
-    #controls-wrapper {
-      position: absolute;
-      left: 50%;
-      bottom: 0;
-      transform: translateX(-50%) translateY(0);
-      transition: transform 0.1s ease;
-      z-index: 10;
-    }
-
-    #controls-wrapper.hidden {
-      transform: translateX(-50%) translateY(100%);
-    }
-
-    /* Controls panel */
-    #controls-panel {
-      background: #2a2a3d;
-      border: 2px solid #121212;
-      padding: 15px 20px;
-      border-radius: 15px 15px 0 0;
-      border-bottom: none;
-    display: flex;
-      flex-direction:row;
-      gap:12px;
-      width:830px;
-      font-family: 'Reddit Mono', monospace;
-      justify-content: center;
-    }
-
-    #controls-panel fieldset {
-      border: 2px solid #121212;
-      border-radius: 10px;
-      padding: 12px;
-      min-width: 200px;
-    }
-
-    #controls-panel fieldset div {
-      display: flex;
-      justify-content: space-between;
-    }
-
-    #controls-panel legend {
-      text-align: center;
-      color: #121212;
-      font-weight: bold;
-    }
-
-    #controls-panel input {
-      text-align: center;
-      width: 100%;
-      margin-bottom: 8px;
-      padding: 6px 10px;
-      border-radius: 8px;
-      border: none;
-      background: #1c1c28;
-      color: grey;
-      font-size: 14px;
-      font-family: Monospace;
-    }
-
-    #controls-panel button {
-      font-family: 'Reddit Mono', monospace;
-      font-weight: 600;
-      background: #3b3b55;
-      color: #f5f5f5;
-      border: none;
-      border-radius: 8px;
-      padding: 6px 12px;
-      font-size: 14px;
-      cursor: pointer;
-      margin: 3px;
-      width: calc(50% - 6px);
-      white-space:nowrap;
-    }
-
-    /* #InsertDelete {
-  display: flex;
-  flex-direction: row; /* ← this is what makes insert & delete side by side
-  gap: 20px;
-} */
-
-.insert-group, .delete-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  flex: 1;
-}
-
-.nth-button {
-  display: flex; /* allow its child to stretch */
-}
-
-.nth-button button {
-  flex: 1;  /* force the button to expand to parent width */
-}
-    #controls-panel button:hover {
-      background: #565678;
-    }
-
-    #controls-panel button:active {
-      background: #3b3b55;
-      color: #f5f5f5;
-    }
-
-    #controls-panel fieldset>button,
-    #Misc button {
-      width: calc(100% - 6px) !important;
-    }
-
-    #Misc {
-      display: flex;
-      justify-content: center;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    #Misc input {
-      width: 100%;
-      margin: 0px;
-    }
-
-    #clear-canvas {
-      background-color: #b22222;
-      color: #fff;
-    }
-
-    #clear-canvas:hover {
-      background-color: #8b1a1a;
-    }
-
-    #node-count-feed {
-      position: fixed;
-      bottom: 15px;
-      right: 20px;
-      font-size: 15px;
-      font-weight: 600;
-      font-family: 'Reddit Mono', monospace;
-      color: #eaeaea;
-      pointer-events: none;
-      background: transparent;
-      display: none;
-    }
-
-    .node.highlight rect.data-cell {
-      fill: rgb(255, 255, 143);
-    }
-
-    .node.highlight text.data-text {
-      fill: black;
-      font-weight: bold;
-    }
-
-    #status-feed {
-      position: fixed;
-      bottom: 15px;
-      /* stick to bottom */
-      left: 20px;
-      /* stick to left */
-      width: auto;
-      overflow: hidden;
-      border-radius: 10px;
-      padding: 8px;
-      font-size: 15px;
-      font-weight: 600;
-      line-height: 1.4;
-      font-family: 'Reddit Mono', monospace;
-      color: #eaeaea;
-      pointer-events: none;
-    }
-
-    .status-msg {
-      opacity: 1;
-      transition: opacity 0.4s ease;
-    }
-
-    .status-msg.fade-out {
-      opacity: 0;
-    }
-
-
-    .status-error {
-      color: #ff4d4d;
-      /* softer red, readable on dark bg */
-    }
-
-    .status-info {
-      color: #ffffff;
-      /* medium blue */
-    }
-
-    .status-success {
-      color: #4dff88;
-      /* teal-green */
-    }
-
-    /* Dynamic sliding panel */
-#dynamic-panel-wrapper {
-  position: fixed;
-  top: 0;
-  right: -350px; /* hidden by default */
-  width: 350px; /* same width as sidebar */
-  height: 100vh;
-  background: #2a2a3d;
-  border-left: 2px solid #121212;
-  padding: 20px;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-  transition: right 0.3s ease;
-  z-index: 60;
-  overflow-y: auto;
-}
-
-#dynamic-panel-wrapper.active {
-  right: 0;
-}
-
-#dynamic-panel-heading {
-  font-size: 18px;
-  color: #f5f5f5;
-  text-align: center;
-  margin-bottom: 10px;
-}
-
-#dynamic-panel-content {
-  margin-top:10px;
-  font-family: 'Fira Code', 'Consolas', 'Courier New', monospace; /* Monospaced font like VS Code */
-  color: white;
-}
-
-  #dynamic-panel-content fieldset{
-      border: 2px solid black;
-      background-color: #1e1e2f;
-      border-radius: 10px;
-      padding: 12px;
-      min-width: 200px;
-    }
-
-    #dynamic-panel-content legend {
-      background-color: #3b3b55;
-      border:2px solid black;
-      border-radius:10px;
-      padding:6px;
-      text-align: center;
-      color: white;
-      font-weight: bold;
-    }
-
-#dynamic-panel-content pre {
-  white-space: pre-wrap;
-  color: #ffffa0;
-  font-size: 16px;
-  overflow:auto;
-  line-height: 2.3;
-  tab-size: 2;
-}
-/* Shared button style */
-.dynamic-btn {
-  font-family: 'Reddit Mono', monospace;
-  font-weight: 600;
-  color: #f5f5f5;
-  border: none;
-  border-radius: 8px;
-  padding: 6px 12px;
-  font-size: 14px;
-  cursor: pointer;
-  width: calc(50% - 6px);
-  white-space: nowrap;
-  transition: background 0.2s;
-}
-
-/* Specific colors */
-#copyCodeBtn {
-  background: #4CAF50; /* green */
-}
-
-#copyCodeBtn:hover {
-  background: #45a049; /* darker green */
-}
-
-#dynamic-panel-close {
-  background: #f44336; /* red */
-}
-
-#dynamic-panel-close:hover {
-  background: #d32f2f; /* darker red */
-}
-
-#team-info-buttons {
-  position: fixed;
-  top: 10px;
-  left: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  z-index: 70;
-}
-
-.info-btn {
-  font-family: 'Reddit Mono', monospace;
-  font-weight: 600;
-  background: #3b3b55;
-  color: #f5f5f5;
-  border: none;
-  border-radius: 8px;
-  padding: 8px 12px;
-  cursor: pointer;
-}
-
-.info-btn:hover {
-  background: #565678;
-}
-
-  </style>
-
+  <link rel="stylesheet" href="index.css">
+</head>
 <body>
 
-<div id="team-info-buttons">
-  <button class="info-btn">Linked List Visualizer</button>
-  <button class="info-btn">By Param & Div</button>
-</div>
+  <!-- Basically Credits: -->
+  <div id="credits">
+    <button class="floating-btn">Linked List Visualizer</button>
+    <button class="floating-btn">By Param & Div</button>
+  </div>
 
-
-<div id="ll-area">
-  <svg>
-    <defs>
+  <!-- Area to House Nodes -->
+  <div id="ll-area">
+    <!-- Svg to print the Desmos BG -->
+    <svg>
+      <defs>
         <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
           <rect width="40" height="40" fill="#1b1b2f" />
           <path d="M40 0 H0 V40" fill="none" stroke="#333" stroke-width="1" />
         </pattern>
-    </defs>
-          <rect width="100%" height="100%" fill="url(#grid)" />
-  </svg>
-</div>
-
-<div id="floating-buttons-wrapper">
-  <div id="floating-controls">
-      <button id="toggle-controls" class="floating-btn" style="border:none">↑ Show Controls</button>
-  </div>
-</div>
-
-<div id="controls-wrapper" class="hidden">
-  <div id="controls-panel">
-    <div class="InsertDelete">
-    <fieldset>
-      <legend>Insert / Delete</legend>
-      <div style="gap:6px;">
-        <input type="text" id="nodeInput" placeholder="Enter Value" autocomplete="off">
-        <input type="text" id="dataInput" placeholder="Enter Element" autocomplete="off">
-        <input type="text" id="posInput" placeholder="Enter Position" autocomplete="off">
-      </div>
-
-    <div id="InsertDelete">
-      <div class="insert-group">
-        <div>
-          <button type="button" id="insertStartBtn">Insert Start</button>
-          <button type="button" id="insertEndBtn">Insert End</button>
-        </div>
-        <div>
-          <button type="button" id="insertBefore">Insert Before</button>
-          <button type="button" id="insertAfter">Insert After</button>
-        </div>
-        <div class="nth-button">
-          <button type="button" id="insertAtBtn">Insert at n<sup>th</sup> Node</button>
-        </div>
-      </div>
-
-      <div class="delete-group">
-        <div>
-          <button type="button" id="deleteStartBtn">Delete Start</button>
-          <button type="button" id="deleteEndBtn">Delete End</button>
-        </div>
-        <div>
-          <button type="button" id="deleteBeforeBtn">Delete Before</button>
-          <button type="button" id="deleteAfterBtn">Delete After</button>
-      </div>
-        <div class="nth-button">
-          <button type="button" id="deleteAtBtn">Delete n<sup>th</sup> Node</button>
-        </div>
-      </div>
-    </div>
-    </fieldset>
+      </defs>
+      <rect width="100%" height="100%" fill="url(#grid)" />
+    </svg>
   </div>
 
-  <div id="Misc">
-    <div>
-      <button style="color: #ff4d4d" id="clear-canvas">Clear Canvas</button>
-    </div>
-    <div>
-      <button type="button" id="makeCircularBtn">Circular</button>
-    </div>
-    <fieldset>
-      <legend>Search</legend>
+  <!-- Show Controls Button -->
+  <button id="control-toggle" class="floating-btn" style="border:none">↑ Show Controls</button>
+
+  <!-- Control Panel -->
+  <div id="control-wrapper" class="hidden">
+    <div id="controls-panel">
       <div>
-        <input type="text" placeholder="Enter value" autocomplete="off" id="searchInput">
+        <fieldset>
+          <legend>Insert / Delete</legend>
+          <div style="gap:6px;">
+            <input type="text" id="nodeInput" placeholder="Enter Value" autocomplete="off">
+            <input type="text" id="dataInput" placeholder="Enter Element" autocomplete="off">
+            <input type="text" id="posInput" placeholder="Enter Position" autocomplete="off">
+          </div>
+
+          <div>
+            <div class="insert-group">
+              <div>
+                <button type="button" id="insertStartBtn">Insert Start</button>
+                <button type="button" id="insertEndBtn">Insert End</button>
+              </div>
+              <div>
+                <button type="button" id="insertBefore">Insert Before</button>
+                <button type="button" id="insertAfter">Insert After</button>
+              </div>
+              <div class="nth-button">
+                <button type="button" id="insertAtBtn">Insert at n<sup>th</sup> Node</button>
+              </div>
+            </div>
+
+            <div class="delete-group">
+              <div>
+                <button type="button" id="deleteStartBtn">Delete Start</button>
+                <button type="button" id="deleteEndBtn">Delete End</button>
+              </div>
+              <div>
+                <button type="button" id="deleteBeforeBtn">Delete Before</button>
+                <button type="button" id="deleteAfterBtn">Delete After</button>
+              </div>
+              <div class="nth-button">
+                <button type="button" id="deleteAtBtn">Delete n<sup>th</sup> Node</button>
+              </div>
+            </div>
+          </div>
+        </fieldset>
       </div>
-      <div>
-        <button type="button" id="searchBtn">Search</button>
+      <div id="Misc">
+        <div>
+          <button style="color: #ff4d4d" id="clear-canvas">Clear Canvas</button>
+        </div>
+        <div>
+          <button type="button" id="makeCircularBtn">Circular</button>
+        </div>
+        <fieldset>
+          <legend>Search</legend>
+          <div>
+            <input type="text" placeholder="Enter value" autocomplete="off" id="searchInput">
+          </div>
+          <div>
+            <button type="button" id="searchBtn">Search</button>
+          </div>
+        </fieldset>
       </div>
-    </fieldset>
+    </div>
   </div>
 
+  <!-- Notification Feed -->
+  <div id="status-feed"></div>
+
+  <!-- Node Counter -->
+  <div id="node-count-feed">
+    Count: <span id="nodeCount">0</span>
   </div>
-</div>
 
-<div id="status-feed"></div>
+  <!-- Display Code button -->
+  <button id="sidebar-toggle" class="floating-btn" style="border:none">☰ Codes:</button>
 
-<div id="node-count-feed">
-  Count: <span id="nodeCount">0</span>
-</div>
-
-<!-- Sidebar Floating Button (same naming as floating wrapper) -->
-<div id="floating-sidebar-wrapper">
-  <div id="floating-sidebar-controls">
-      <button id="toggle-sidebar" class="floating-btn" style="border:none">☰ Codes:</button>
-  </div>
-</div>
-
-<!-- Sidebar panel -->
-<div id="sidebar-wrapper" class="hidden">
-  <div id="sidebar-panel">
-<fieldset class="sidebar-fieldset">
-    <legend>Misc.</legend>
-
-    <div class="sidebar-row">
-      <button id="Search">Search</button>
-      <button id="Count">Count</button>
-    </div>
-  </fieldset>
-
-  <!-- Linear Section -->
-  <fieldset class="sidebar-fieldset">
-    <legend>Linear</legend>
-
-    <div class="sidebar-row">
-      <button id="L-Insert-Start">Insert Start</button>
-      <button id="L-Insert-End">Insert End</button>
-    </div>
-    <div class="sidebar-row">
-      <button id="L-Insert-Before">Insert Before</button>
-      <button id="L-Insert-After">Insert After</button>
-    </div>
-    <div class="sidebar-row">
-      <button id="L-Insert-At">Insert At</button>
-    </div>
-    <div class="sidebar-row">
-      <button id="L-Delete-Start">Delete Start</button>
-      <button id="L-Delete-End">Delete End</button>
-    </div>
-    <div class="sidebar-row">
-      <button id="L-Delete-Before">Delete Before</button>
-      <button id="L-Delete-After">Delete After</button>
-    </div>
-    <div class="sidebar-row">
-      <button id="L-Delete-At">Delete At</button>
-    </div>
-
-  </fieldset>
-
-  <!-- Circular Section -->
-  <fieldset class="sidebar-fieldset">
-    <legend>Circular</legend>
-
-    <div class="sidebar-row">
-      <button id="C-Insert-Start">Insert Start</button>
-      <button id="C-Insert-End">Insert End</button>
-    </div>
-    <div class="sidebar-row">
-      <button id="C-Insert-Before">Insert Before</button>
-      <button id="C-Insert-After">Insert After</button>
-    </div>
-    <div class="sidebar-row">
-      <button id="C-Insert-At">Insert At</button>
-    </div>
-    <div class="sidebar-row">
-      <button id="C-Delete-Start">Delete Start</button>
-      <button id="C-Delete-End">Delete End</button>
-    </div>
-    <div class="sidebar-row">
-      <button id="C-Delete-Before">Delete Before</button>
-      <button id="C-Delete-After">Delete After</button>
-    </div>
-    <div class="sidebar-row">
-      <button id="C-Delete-At">Delete At</button>
-    </div>
-
-  </fieldset>
-</div>
-</div>
-
-<div id="dynamic-panel-wrapper">
-  <div id="dynamic-panel">
-    <div id="dynamic-panel-buttons">
-      <button id="dynamic-panel-close" class="dynamic-btn">✖ Close Code</button>
-      <button id="copyCodeBtn" class="dynamic-btn">⧉ Copy Code</button>
-    </div>
-    <div id="dynamic-panel-content">
+  <!-- Code Panel -->
+  <div id="sidebar-wrapper" class="hidden">
+    <div id="sidebar-panel">
       <fieldset>
-        <legend id="dynamic-panel-heading"></legend>
-          <pre id="codeContainer"></pre>
+        <legend>Misc.</legend>
+
+        <div class="sidebar-row">
+          <button id="Search">Search</button>
+          <button id="Count">Count</button>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Linear</legend>
+
+        <div class="sidebar-row">
+          <button id="L-Insert-Start">Insert Start</button>
+          <button id="L-Insert-End">Insert End</button>
+        </div>
+        <div class="sidebar-row">
+          <button id="L-Insert-Before">Insert Before</button>
+          <button id="L-Insert-After">Insert After</button>
+        </div>
+        <div class="sidebar-row">
+          <button id="L-Insert-At">Insert At</button>
+        </div>
+        <div class="sidebar-row">
+          <button id="L-Delete-Start">Delete Start</button>
+          <button id="L-Delete-End">Delete End</button>
+        </div>
+        <div class="sidebar-row">
+          <button id="L-Delete-Before">Delete Before</button>
+          <button id="L-Delete-After">Delete After</button>
+        </div>
+        <div class="sidebar-row">
+          <button id="L-Delete-At">Delete At</button>
+        </div>
+
+      </fieldset>
+
+      <fieldset>
+        <legend>Circular</legend>
+
+        <div class="sidebar-row">
+          <button id="C-Insert-Start">Insert Start</button>
+          <button id="C-Insert-End">Insert End</button>
+        </div>
+        <div class="sidebar-row">
+          <button id="C-Insert-Before">Insert Before</button>
+          <button id="C-Insert-After">Insert After</button>
+        </div>
+        <div class="sidebar-row">
+          <button id="C-Insert-At">Insert At</button>
+        </div>
+        <div class="sidebar-row">
+          <button id="C-Delete-Start">Delete Start</button>
+          <button id="C-Delete-End">Delete End</button>
+        </div>
+        <div class="sidebar-row">
+          <button id="C-Delete-Before">Delete Before</button>
+          <button id="C-Delete-After">Delete After</button>
+        </div>
+        <div class="sidebar-row">
+          <button id="C-Delete-At">Delete At</button>
+        </div>
+
       </fieldset>
     </div>
   </div>
-</div>
 
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-  logStatus("Welcome! Use the controls to manipulate a linked list.", "info", 6000);
-  const datainput = document.getElementById("nodeInput");
-  const elementinput = document.getElementById("dataInput");
-  const posinput = document.getElementById("posInput");
-
-  const insertStartBtn = document.getElementById("insertStartBtn");
-  const insertEndBtn = document.getElementById("insertEndBtn");
-  const insertBeforeBtn = document.getElementById("insertBefore");
-  const insertAfterBtn = document.getElementById("insertAfter");
-  const insertAtBtn = document.getElementById("insertAtBtn");
-
-  const deleteStartBtn = document.getElementById("deleteStartBtn");
-  const deleteEndBtn = document.getElementById("deleteEndBtn");
-  const deleteBeforeBtn = document.getElementById("deleteBeforeBtn");
-  const deleteAfterBtn = document.getElementById("deleteAfterBtn");
-  const deleteAtBtn = document.getElementById("deleteAtBtn");
-
-  const searchInput = document.getElementById("searchInput");
-  const searchBtn = document.getElementById("searchBtn");
-  const toggleCircularBtn = document.getElementById("makeCircularBtn");
-
-  const clearCanvasBtn = document.getElementById("clear-canvas");
-
-  const toggleControlsBtn = document.getElementById("toggle-controls");
-  const controlsWrapper = document.getElementById("controls-wrapper");
-  const floatingWrapper = document.getElementById("floating-buttons-wrapper");
-
-  const sidebar = document.getElementById('sidebar-wrapper');
-  const sidebarBtn = document.getElementById('toggle-sidebar');
-  const sidebarWrapper = document.getElementById('floating-sidebar-wrapper');
-
-  const dynamicPanelWrapper = document.getElementById("dynamic-panel-wrapper");
-  const dynamicPanelHeading = document.getElementById("dynamic-panel-heading");
-  const dynamicPanelContent = document.getElementById("dynamic-panel-content");
-  const dynamicPanelClose = document.getElementById("dynamic-panel-close");
-
-fetch("linearlinkedfuncs.json")
-  .then(res => res.json())
-  .then(data => {
-    document.querySelectorAll('#sidebar-panel button').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const funcName = btn.id;
-        const code = data[funcName];
-        dynamicPanelHeading.textContent = btn.textContent.trim();
-        const codeEl = document.getElementById("codeContainer");
-        if (codeEl) codeEl.textContent = code;
-        dynamicPanelWrapper.classList.add("active");
-      });
-    });
-  })
-  .catch(err => console.error("Error loading JSON:", err));
-
-fetch("circularlinkedfuncs.json")
-  .then(res => res.json())
-  .then(data => {
-    document.querySelectorAll('#sidebar-wrapper fieldset:nth-child(3) button').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const funcName = btn.id; // make sure your JSON keys match button IDs
-        const code = data[funcName];
-        dynamicPanelHeading.textContent = btn.textContent.trim();
-        const codeEl = document.getElementById("codeContainer");
-        if (codeEl) codeEl.textContent = code;
-        dynamicPanelWrapper.classList.add("active");
-      });
-    });
-  })
-  .catch(err => console.error("Error loading circular JSON:", err));
-
-// Fetch misc functions JSON
-fetch("misclinkedfuncs.json")
-  .then(res => res.json())
-  .then(data => {
-    // Select the two buttons in the Misc fieldset
-    document.querySelectorAll('#sidebar-panel fieldset:nth-child(1) button').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const funcName = btn.textContent.trim(); // "Search" or "Count"
-        const code = data[funcName];
-        dynamicPanelHeading.textContent = btn.textContent.trim();
-        const codeEl = document.getElementById("codeContainer");
-        if (codeEl) codeEl.textContent = code;
-        dynamicPanelWrapper.classList.add("active");
-      });
-    });
-  })
-  .catch(err => console.error("Error loading Misc JSON:", err));
-
-  let nodes = [];
-  let links = [];
-  let nextId = 0;
-  let isCircular = false;
-
-  const svg = d3.select("svg");
-  const g = svg.append("g");
-
-  svg.append("defs").append("marker")
-    .attr("id", "arrow")
-    .attr("viewBox", "0 -5 10 10")
-    .attr("refX", 5)
-    .attr("refY", 0)
-    .attr("markerWidth", 6)
-    .attr("markerHeight", 6)
-    .attr("orient", "auto")
-    .append("path")
-    .attr("d", "M0,-5L10,0L0,5")
-    .attr("fill", "yellowgreen");
-
-  const simulation = d3.forceSimulation(nodes)
-    .force("link", d3.forceLink(links).id(d => d.id).distance(150))
-    .force("charge", d3.forceManyBody().strength(-500))
-    .force("center", d3.forceCenter(window.innerWidth / 2, window.innerHeight / 2));
-
-  function updateGraph() {
-    let linkSel = g.selectAll(".link").data(links);
-    let nodeSel = g.selectAll(".node").data(nodes, d => d.id);
-
-    linkSel.exit().remove();
-    nodeSel.exit().remove();
-
-    const nodeEnter = nodeSel.enter()
-      .append("g")
-      .attr("class", "node")
-      .call(
-        d3.drag()
-          .on("start", dragstarted)
-          .on("drag", dragged)
-          .on("end", dragended)
-      );
-
-    nodeEnter.append("rect")
-      .attr("class", "outer")
-      .attr("rx", 15)
-      .attr("ry", 15)
-      .attr("stroke-width", 2)
-      .attr("fill", "none")
-      .attr("width", d => Math.max(60, d.text.length * 8) + 20)
-      .attr("height", 80);
-
-    nodeEnter.append("rect")
-      .attr("class", "data-cell")
-      .attr("x", 10)
-      .attr("y", 10)
-      .attr("height", 30)
-      .attr("rx", 5)
-      .attr("ry", 5)
-      .attr("fill", "white")
-      .attr("width", d => Math.max(60, d.text.length * 8));
-
-    nodeEnter.append("text")
-      .attr("class", "data-text")
-      .attr("y", 25)
-      .attr("text-anchor", "middle")
-      .attr("alignment-baseline", "middle")
-      .attr("fill", "red")
-      .attr("x", d => 10 + Math.max(60, d.text.length * 8) / 2)
-      .text(d => d.text);
-
-    const gap = 30;
-
-    nodeEnter.append("circle")
-      .attr("cy", 58)
-      .attr("r", 5)
-      .attr("fill", "#ff4d4d")
-      .attr("cx", d => 10 + Math.max(60, d.text.length * 8) / 2 + gap / 2);
-
-    nodeSel = nodeEnter.merge(nodeSel);
-
-    linkSel = linkSel.enter()
-      .append("line")
-      .attr("class", "link")
-      .attr("stroke", "black")
-      .attr("stroke-width", 2)
-      .attr("marker-end", "url(#arrow)")
-      .merge(linkSel);
-
-    simulation.nodes(nodes).on("tick", ticked);
-    simulation.force("link").links(links);
-    simulation.alpha(1).restart();
-
-    function ticked() {
-      const gap = 30;
-      const circleY = 58;
-      const circleX = d => 10 + Math.max(60, d.text.length * 8) / 2;
-
-      g.selectAll(".link")
-        .attr("x1", d => d.source.x + circleX(d.source) + gap / 2)
-        .attr("y1", d => d.source.y + circleY)
-        .attr("x2", d => d.target.x + circleX(d.target) - gap / 2)
-        .attr("y2", d => d.target.y + circleY);
-
-      g.selectAll(".node")
-        .attr("transform", d => `translate(${d.x},${d.y})`);
-
-      g.selectAll(".start-pointer").remove();
-      g.selectAll(".end-pointer").remove();
-
-      if (nodes.length > 0) {
-        const startNode = nodes[0];
-        const endNode = nodes[nodes.length - 1];
-        const leftCircleX = circleX(startNode) - gap / 2;
-        const rightCircleX = circleX(endNode) - gap / 2;
-
-        g.append("line")
-          .attr("class", "start-pointer")
-          .attr("x1", startNode.x + leftCircleX)
-          .attr("y1", startNode.y + circleY + 50)
-          .attr("x2", startNode.x + leftCircleX)
-          .attr("y2", startNode.y + circleY)
-          .attr("stroke", "#eaeaea")
-          .attr("stroke-width", 2)
-          .attr("marker-end", "url(#arrow)");
-
-        g.append("text")
-          .attr("class", "start-pointer")
-          .attr("x", startNode.x + leftCircleX)
-          .attr("y", startNode.y + circleY + 60)
-          .attr("fill", "#eaeaea")
-          .attr("text-anchor", "middle")
-          .text("Start");
-
-        g.append("line")
-          .attr("class", "end-pointer")
-          .attr("x1", endNode.x + rightCircleX)
-          .attr("y1", endNode.y + circleY + 50)
-          .attr("x2", endNode.x + rightCircleX)
-          .attr("y2", endNode.y + circleY)
-          .attr("stroke", "#eaeaea")
-          .attr("stroke-width", 2)
-          .attr("marker-end", "url(#arrow)");
-
-        g.append("text")
-          .attr("class", "end-pointer")
-          .attr("x", endNode.x + rightCircleX)
-          .attr("y", endNode.y + circleY + 60)
-          .attr("fill", "#eaeaea")
-          .attr("text-anchor", "middle")
-          .text("End");
-      }
-    }
-  }
-
-  function dragstarted(event, d) {
-    if (!event.active) simulation.alphaTarget(0.3).restart();
-    d.fx = d.x;
-    d.fy = d.y;
-  }
-
-  function dragged(event, d) {
-    d.fx = event.x;
-    d.fy = event.y;
-  }
-
-  function dragended(event, d) {
-    if (!event.active) simulation.alphaTarget(0);
-    d.fx = null;
-    d.fy = null;
-  }
-
-  const zoom = d3.zoom().scaleExtent([0.3, 3]).on("zoom", (event) => {
-    g.attr("transform", event.transform);
-  });
-  svg.call(zoom);
-
-  function updateNodePositions() {
-    const startX = window.innerWidth / 3;
-    const y = window.innerHeight / 2;
-    const gap = 150;
-    nodes.forEach((d, i) => {
-      if (!d.fx) d.x = startX + i * gap;
-      if (!d.fy) d.y = y;
-    });
-  }
-
-  function updateNodeCount() {
-    const countFeed = document.getElementById("node-count-feed");
-    const countSpan = document.getElementById("nodeCount");
-    if (nodes.length === 0) countFeed.style.display = "none";
-    else { countFeed.style.display = "block"; countSpan.textContent = nodes.length; }
-  }
-
-  function clearCanvas() {
-    nodes = [];
-    links = [];
-    nextId = 0;
-    g.selectAll("*").remove();
-    simulation.nodes(nodes);
-    simulation.force("link").links(links);
-    updateNodeCount();
-    simulation.alpha(1).restart();
-    document.getElementById("nodeCount").textContent = 0;
-    logStatus("Canvas cleared", "info");
-  }
-
-function openDynamicPanel(title, htmlContent = "") {
-  dynamicPanelHeading.textContent = title;
-  dynamicPanelContent.innerHTML = htmlContent;
-  dynamicPanelWrapper.classList.add("active");
-}
-
-function closeDynamicPanel() {
-  dynamicPanelWrapper.classList.remove("active");
-}
-
-  function toggleCircular() {
-    isCircular = !isCircular;
-    toggleCircularBtn.textContent = isCircular ? "Make Linear" : "Make Circular";
-    rebuildLinks();
-    logStatus(`List is now ${isCircular ? "Circular" : "Linear"}`, "info");
-  }
-
-  function logStatus(msg, type = "info", timeout = 4000) {
-  const feed = document.getElementById("status-feed");
-  const entry = document.createElement("div");
-  entry.classList.add("status-msg");
-
-  if (type === "error") entry.classList.add("status-error");
-  if (type === "success") entry.classList.add("status-success");
-  if (type === "info") entry.classList.add("status-info");
-
-  entry.textContent = `${msg}`;
-  feed.appendChild(entry);
-  feed.scrollTop = feed.scrollHeight; // auto scroll
-
-  setTimeout(() => {
-    entry.classList.add("fade-out");
-    setTimeout(() => entry.remove(), 500); // match CSS transition
-  }, timeout);
-  }
-
-  function rebuildLinks() {
-    links = [];
-    for (let i = 0; i < nodes.length - 1; i++) links.push({ source: nodes[i], target: nodes[i + 1] });
-    if (isCircular && nodes.length > 1) links.push({ source: nodes[nodes.length - 1], target: nodes[0] });
-    updateNodePositions();
-    updateNodeCount();
-    updateGraph();
-  }
-
-  function insertNodeEnd() {
-    const data = datainput.value.trim();
-    if (!data) return logStatus("Please enter a value to insert", "error");
-    nodes.push({ id: nextId++, text: data });
-    rebuildLinks();
-    logStatus(`Node "${data}" added at the end`, "success");
-    datainput.value = "";
-  }
-
-  function insertNodeStart() {
-    const data = datainput.value.trim();
-    if (!data) return logStatus("Please enter a value to insert", "error");
-    nodes.unshift({ id: nextId++, text: data });
-    rebuildLinks();
-    logStatus(`Node "${data}" added at the start`, "success");
-    datainput.value = "";
-  }
-
-  function insertBeforeNode() {
-    const data = datainput.value.trim();
-    const ref = elementinput.value.trim();
-    if (!data || !ref) return logStatus("Both node value and reference element required", "error");
-    const index = nodes.findIndex(n => n.text === ref);
-    if (index === -1) return logStatus(`Reference node "${ref}" not found`, "error");
-    nodes.splice(index, 0, { id: nextId++, text: data });
-    rebuildLinks();
-    logStatus(`Node "${data}" inserted before "${ref}"`, "success");
-    datainput.value = elementinput.value = "";
-  }
-
-  function insertAfterNode() {
-    const data = datainput.value.trim();
-    const ref = elementinput.value.trim();
-    if (!data || !ref) return logStatus("Both node value and reference element required", "error");
-    const index = nodes.findIndex(n => n.text === ref);
-    if (index === -1) return logStatus(`Reference node "${ref}" not found`, "error");
-    nodes.splice(index + 1, 0, { id: nextId++, text: data });
-    rebuildLinks();
-    logStatus(`Node "${data}" inserted after "${ref}"`, "success");
-    datainput.value = elementinput.value = "";
-  }
-
-  function insertAt() {
-    const data = datainput.value.trim();
-    const pos = parseInt(posinput.value.trim(), 10);
-    if (!data || isNaN(pos)) return logStatus("Both node value and valid position required", "error");
-    if (pos < 1 || pos > nodes.length + 1) return logStatus("Position out of range", "error");
-    nodes.splice(pos - 1, 0, { id: nextId++, text: data });
-    rebuildLinks();
-    logStatus(`Node "${data}" inserted at position ${pos}`, "success");
-    datainput.value = posinput.value = "";
-  }
-
-  function deleteNodeStart() {
-    if (!nodes.length) return logStatus("List is empty", "error");
-    const removed = nodes.shift();
-    rebuildLinks();
-    logStatus(`Node "${removed.text}" deleted from start`, "success");
-  }
-
-  function deleteNodeEnd() {
-    if (!nodes.length) return logStatus("List is empty", "error");
-    const removed = nodes.pop();
-    rebuildLinks();
-    logStatus(`Node "${removed.text}" deleted from end`, "success");
-  }
-
-  function deleteBeforeNode() {
-    const ref = elementinput.value.trim();
-    if (!ref) return logStatus("Reference element required", "error");
-    const index = nodes.findIndex(n => n.text === ref);
-    if (index <= 0) return logStatus("No node exists before this reference", "error");
-    const removed = nodes.splice(index - 1, 1)[0];
-    rebuildLinks();
-    logStatus(`Node "${removed.text}" deleted before "${ref}"`, "success");
-    elementinput.value = "";
-  }
-
-  function deleteAfterNode() {
-    const ref = elementinput.value.trim();
-    if (!ref) return logStatus("Reference element required", "error");
-    const index = nodes.findIndex(n => n.text === ref);
-    if (index === -1 || index === nodes.length - 1) return logStatus("No node exists after this reference", "error");
-    const removed = nodes.splice(index + 1, 1)[0];
-    rebuildLinks();
-    logStatus(`Node "${removed.text}" deleted after "${ref}"`, "success");
-    elementinput.value = "";
-  }
-
-  function deleteAt() {
-    const pos = parseInt(posinput.value.trim(), 10);
-    if (isNaN(pos)) return logStatus("Valid position required", "error");
-    if (pos < 1 || pos > nodes.length) return logStatus("Position out of range", "error");
-    const removed = nodes.splice(pos - 1, 1)[0];
-    rebuildLinks();
-    logStatus(`Node "${removed.text}" deleted at position ${pos}`, "success");
-    posinput.value = "";
-  }
-
-  const performSearch = () => {
-    const value = searchInput.value.trim();
-    if (!value) {
-      logStatus("Cannot search for an empty value", "error");
-      return;
-    }
-    g.selectAll(".node").classed("highlight", false);
-    g.selectAll(".highlight-marker").remove();
-    const matchingNodes = nodes.filter(n => n.text === value);
-
-    if (matchingNodes.length > 0) {
-      matchingNodes.forEach(node => {
-        g.selectAll(".node").filter(d => d.id === node.id).classed("highlight", true);
-        const index = nodes.indexOf(node);
-        const dataCellWidth = Math.max(60, node.text.length * 8);
-        const circleX = 10 + dataCellWidth + 15;
-
-        g.append("text")
-          .attr("class", "highlight-marker")
-          .attr("x", node.x + circleX)
-          .attr("y", node.y - 10)
-          .attr("text-anchor", "middle")
-          .attr("fill", "rgb(255, 255, 143)")
-          .attr("font-weight", "bold")
-          .style("opacity", 1)
-          .text(`Index: ${index + 1}`)
-          .transition()
-          .duration(2000)
-          .remove();
-      });
-
-      g.selectAll(".node.highlight").selectAll("rect, circle")
-        .transition().duration(400).style("opacity", 0.3)
-        .transition().duration(400).style("opacity", 1)
-        .transition().duration(400).style("opacity", 0.3)
-        .transition().duration(400).style("opacity", 1)
-        .on("end", function() { d3.select(this.parentNode).classed("highlight", false); });
-
-      logStatus(`Found ${matchingNodes.length} ${matchingNodes.length === 1 ? "instance" : "instances"} of "${value}"`, "success");
-    } else {
-      logStatus(`"${value}" not present`, "error");
-    }
-    searchInput.value = "";
-  };
-
-  insertStartBtn.addEventListener("click", insertNodeStart);
-  insertEndBtn.addEventListener("click", insertNodeEnd);
-  insertBeforeBtn.addEventListener("click", insertBeforeNode);
-  insertAfterBtn.addEventListener("click", insertAfterNode);
-  insertAtBtn.addEventListener("click", insertAt);
-
-  deleteStartBtn.addEventListener("click", deleteNodeStart);
-  deleteEndBtn.addEventListener("click", deleteNodeEnd);
-  deleteBeforeBtn.addEventListener("click", deleteBeforeNode);
-  deleteAfterBtn.addEventListener("click", deleteAfterNode);
-  deleteAtBtn.addEventListener("click", deleteAt);
-
-  toggleCircularBtn.addEventListener("click", toggleCircular);
-  clearCanvasBtn.addEventListener("click", clearCanvas);
-  searchBtn.addEventListener("click", performSearch);
-
-  datainput.addEventListener("keypress", (event) => {
-    if (event.key === "Enter") { event.preventDefault(); insertNodeEnd(); }
-  });
-
-  searchInput.addEventListener("keypress", (event) => {
-    if (event.key === "Enter") { event.preventDefault(); performSearch(); }
-  });
-
-  toggleControlsBtn.addEventListener("click", () => {
-    controlsWrapper.classList.toggle("hidden");
-    if (!controlsWrapper.classList.contains("hidden")) {
-      floatingWrapper.classList.add("top");
-      toggleControlsBtn.textContent = "↓ Hide Controls";
-    } else {
-      floatingWrapper.classList.remove("top");
-      toggleControlsBtn.textContent = "↑ Show Controls";
-    }
-  });
-
-sidebarBtn.addEventListener('click', () => {
-  sidebar.classList.toggle('active');
-  sidebarWrapper.classList.toggle('top'); // move button up like floating controls
-
-  // Close dynamic panel if it's open
-  if(dynamicPanelWrapper.classList.contains('active')){
-    dynamicPanelWrapper.classList.remove('active');
-  }
-});
-
-dynamicPanelClose.addEventListener('click', () => {
-  dynamicPanelWrapper.classList.remove("active");
-});
-
-document.getElementById("copyCodeBtn").addEventListener("click", async () => {
-    const codeEl = document.getElementById("codeContainer");
-    if (!codeEl) return logStatus("Code container not found", "error");
-
-    const codeText = codeEl.textContent.trim();
-    if (!codeText) return logStatus("No code to copy", "error");
-
-    try {
-        await navigator.clipboard.writeText(codeText);
-        logStatus("Code copied to clipboard!", "success");
-    } catch (err) {
-        console.error(err);
-        logStatus("Failed to copy code", "error");
-    }
-});
-
-});
-
-</script>
+  <!-- Indiviual Codes -->
+  <div id="dynamic-panel-wrapper" class="hidden">
+    <div id="dynamic-panel">
+      <div id="dynamic-panel-buttons">
+        <button id="dynamic-panel-close" class="dynamic-btn"> Close Code</button>
+        <button id="copyCodeBtn" class="dynamic-btn">Copy Code</button>
+      </div>
+      <div id="dynamic-panel-content">
+        <fieldset>
+          <legend id="dynamic-panel-heading"></legend>
+          <pre id="codeContainer"></pre>
+        </fieldset>
+      </div>
+    </div>
+  </div>
+
+<script src="index.js"></script>
 
 </body>
 

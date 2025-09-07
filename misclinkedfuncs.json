@@ -1,0 +1,5 @@
+{
+	"Search": "int search(int data) {\n\tstruct node* temp = start;\n\tint pos = -1;\n\tif (temp == NULL) {\n\t\treturn pos;\n\t}\n\twhile (temp != NULL) {\n\t\tif (temp->data == data) {\n\t\t\treturn ++pos;\n\t\t} else {\n\t\t\ttemp = temp->next;\n\t\t\tpos++;\n\t\t}\n\t}\n\treturn -2;\n}",
+    
+	"Count": "int count() {\n\tstruct node *temp = start;\n\tint count = 0;\n\twhile (temp != NULL) {\n\t\ttemp = temp->next;\n\t\tcount++;\n\t}\n\treturn count;\n}"
+}

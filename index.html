@@ -7,12 +7,12 @@
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <link rel="stylesheet" href="index.css">
 </head>
+
 <body>
 
   <!-- Basically Credits: -->
   <div id="credits">
-    <button class="floating-btn">Linked List Visualizer</button>
-    <button class="floating-btn">By Param & Div</button>
+    <button class="floating-btn">Linked List Visualizer<br>By Param & Div</button>
   </div>
 
   <!-- Area to House Nodes -->
@@ -80,7 +80,10 @@
           <button style="color: #ff4d4d" id="clear-canvas">Clear Canvas</button>
         </div>
         <div>
-          <button type="button" id="makeCircularBtn">Circular</button>
+          <div id="toggle-btn-wrapper">
+            <button type="button" id="makeCircularBtn">Make Circular</button>
+            <button type="button" id="makeDoublyBtn">Make Doubly</button>
+          </div>
         </div>
         <fieldset>
           <legend>Search</legend>
@@ -100,7 +103,8 @@
 
   <!-- Node Counter -->
   <div id="node-count-feed">
-    Count: <span id="nodeCount">0</span>
+    <div><span style="color:orange">Type:</span> <span id="list-type"></span></div>
+    <div><span style="color:orange">Count:</span> <span id="nodeCount">0</span></div>
   </div>
 
   <!-- Display Code button -->
@@ -192,7 +196,7 @@
     </div>
   </div>
 
-<script src="index.js"></script>
+  <script src="index.js"></script>
 
 </body>
 

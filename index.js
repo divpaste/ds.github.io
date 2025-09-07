@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const searchBtn = document.getElementById("searchBtn");
 
     const toggleCircularBtn = document.getElementById("makeCircularBtn");
+    const toggleDoublyBtn = document.getElementById("makeDoublyBtn");
     const clearCanvasBtn = document.getElementById("clear-canvas");
 
     const toggleControlsBtn = document.getElementById("control-toggle");
@@ -85,6 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let links = [];
     let nextId = 0;
     let isCircular = false;
+    let isDoubly = false;
 
     const svg = d3.select("svg");
     const g = svg.append("g");
@@ -99,12 +101,14 @@ document.addEventListener('DOMContentLoaded', () => {
         .attr("orient", "auto")
         .append("path")
         .attr("d", "M0,-5L10,0L0,5")
-        .attr("fill", "yellowgreen");
+        .attr("fill", "white");
 
     const simulation = d3.forceSimulation(nodes)
         .force("link", d3.forceLink(links).id(d => d.id).distance(150))
         .force("charge", d3.forceManyBody().strength(-500))
         .force("center", d3.forceCenter(window.innerWidth / 2, window.innerHeight / 2));
+
+    updateListType();    
 
     function updateGraph() {
         let linkSel = g.selectAll(".link").data(links);
@@ -126,26 +130,52 @@ document.addEventListener('DOMContentLoaded', () => {
         nodeEnter.append("rect")
             .attr("class", "outer")
             .attr("width", d => Math.max(60, d.text.length * 8) + 20)
-            .attr("height", 80);
+            .attr("height", 100);
 
         nodeEnter.append("rect")
             .attr("class", "data-cell")
             .attr("x", 10)
-            .attr("y", 10)
+            .attr("y", 35)
             .attr("width", d => Math.max(60, d.text.length * 8))
             .attr("height", 30);
 
         nodeEnter.append("text")
             .attr("class", "data-text")
             .attr("x", d => 10 + Math.max(60, d.text.length * 8) / 2)
-            .attr("y", 25)
+            .attr("y", 50)
+            .attr("text-anchor", "middle")
+            .attr("dominant-baseline", "middle")
             .text(d => d.text);
 
         const gap = 30;
 
         nodeEnter.append("circle")
+            .attr("class", "top-left-circle")
+            .attr("cx", d => 10 + Math.max(60, d.text.length * 8) / 2 - 15)
+            .attr("cy", 20)
+            .attr("r", 5)
+            .attr("fill", "orangered");
+
+        nodeEnter.append("circle")
+            .attr("class", "top-right-circle")
             .attr("cx", d => 10 + Math.max(60, d.text.length * 8) / 2 + 15)
-            .attr("r", 5);
+            .attr("cy", 20)
+            .attr("r", 5)
+            .attr("fill", "orangered");
+
+        nodeEnter.append("circle")
+            .attr("class", "bottom-left-circle")
+            .attr("cx", d => 10 + Math.max(60, d.text.length * 8) / 2 - 15)
+            .attr("cy", 80)
+            .attr("r", 5)
+            .attr("fill", "deepskyblue");
+
+        nodeEnter.append("circle")
+            .attr("class", "bottom-right-circle")
+            .attr("cx", d => 10 + Math.max(60, d.text.length * 8) / 2 + 15)
+            .attr("cy", 80)
+            .attr("r", 5)
+            .attr("fill", "deepskyblue");
 
         nodeSel = nodeEnter.merge(nodeSel);
 
@@ -162,23 +192,78 @@ document.addEventListener('DOMContentLoaded', () => {
         simulation.alpha(1).restart();
 
         function ticked() {
-            const gap = 30;
-            const circleY = 58;
+            const circleY = 82;
             const circleX = d => 10 + Math.max(60, d.text.length * 8) / 2;
 
-            g.selectAll(".link")
-                .attr("x1", d => d.source.x + circleX(d.source) + gap / 2)
-                .attr("y1", d => d.source.y + circleY)
-                .attr("x2", d => d.target.x + circleX(d.target) - gap / 2)
-                .attr("y2", d => d.target.y + circleY);
+            g.selectAll(".link, .backward-link, .start-pointer, .end-pointer, .highlight-marker").remove();
+
+            for (let i = 0; i < nodes.length - 1; i++) {
+                const source = nodes[i];
+                const target = nodes[i + 1];
+
+                g.append("line")
+                    .attr("class", "link")
+                    .attr("x1", source.x + circleX(source) + 15)
+                    .attr("y1", source.y + 80)
+                    .attr("x2", target.x + circleX(target) - 15)
+                    .attr("y2", target.y + 80)
+                    .attr("stroke", "deepskyblue")
+                    .attr("stroke-width", 2)
+                    .attr("marker-end", "url(#arrow)");
+            }
+
+            if (isCircular && nodes.length > 1) {
+                const last = nodes[nodes.length - 1];
+                const first = nodes[0];
+
+                g.append("line")
+                    .attr("class", "link")
+                    .attr("x1", last.x + circleX(last) + 15)
+                    .attr("y1", last.y + 80)
+                    .attr("x2", first.x + circleX(first) - 15)
+                    .attr("y2", first.y + 80)
+                    .attr("stroke", "deepskyblue")
+                    .attr("stroke-width", 2)
+                    .attr("marker-end", "url(#arrow)");
+            }
+
+            if (isDoubly) {
+                for (let i = 1; i < nodes.length; i++) {
+                    const source = nodes[i];
+                    const target = nodes[i - 1];
+
+                    g.append("line")
+                        .attr("class", "backward-link")
+                        .attr("x1", source.x + circleX(source) - 15)
+                        .attr("y1", source.y + 20)
+                        .attr("x2", target.x + circleX(target) + 15)
+                        .attr("y2", target.y + 20)
+                        .attr("stroke", "orangered")
+                        .attr("stroke-width", 2)
+                        .attr("marker-end", "url(#arrow)");
+                }
+
+                if (isCircular && nodes.length > 1) {
+                    const first = nodes[0];
+                    const last = nodes[nodes.length - 1];
+
+                    g.append("line")
+                        .attr("class", "backward-link")
+                        .attr("x1", first.x + circleX(first) - 15)
+                        .attr("y1", first.y + 20)
+                        .attr("x2", last.x + circleX(last) + 15)
+                        .attr("y2", last.y + 20)
+                        .attr("stroke", "orangered")
+                        .attr("stroke-width", 2)
+                        .attr("marker-end", "url(#arrow)");
+                }
+            }
 
             g.selectAll(".node")
                 .attr("transform", d => `translate(${d.x},${d.y})`);
 
-            g.selectAll(".start-pointer").remove();
-            g.selectAll(".end-pointer").remove();
-
             if (nodes.length > 0) {
+                const gap = 30;
                 const startNode = nodes[0];
                 const endNode = nodes[nodes.length - 1];
                 const leftCircleX = circleX(startNode) - gap / 2;
@@ -190,15 +275,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     .attr("y1", startNode.y + circleY + 50)
                     .attr("x2", startNode.x + leftCircleX)
                     .attr("y2", startNode.y + circleY)
-                    .attr("stroke", "#eaeaea")
+                    .attr("stroke", "yellowgreen")
                     .attr("stroke-width", 2)
                     .attr("marker-end", "url(#arrow)");
 
                 g.append("text")
                     .attr("class", "start-pointer")
                     .attr("x", startNode.x + leftCircleX)
-                    .attr("y", startNode.y + circleY + 60)
-                    .attr("fill", "#eaeaea")
+                    .attr("y", startNode.y + circleY + 65)
+                    .attr("fill", "yellowgreen")
                     .attr("text-anchor", "middle")
                     .text("Start");
 
@@ -208,18 +293,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     .attr("y1", endNode.y + circleY + 50)
                     .attr("x2", endNode.x + rightCircleX)
                     .attr("y2", endNode.y + circleY)
-                    .attr("stroke", "#eaeaea")
+                    .attr("stroke", "red")
                     .attr("stroke-width", 2)
                     .attr("marker-end", "url(#arrow)");
 
                 g.append("text")
                     .attr("class", "end-pointer")
                     .attr("x", endNode.x + rightCircleX)
-                    .attr("y", endNode.y + circleY + 60)
-                    .attr("fill", "#eaeaea")
+                    .attr("y", endNode.y + circleY + 65)
+                    .attr("fill", "red")
                     .attr("text-anchor", "middle")
                     .text("End");
-
             }
         }
     }
@@ -257,10 +341,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateNodeCount() {
-        const countFeed = document.getElementById("node-count-feed");
         const countSpan = document.getElementById("nodeCount");
-        if (nodes.length === 0) countFeed.style.display = "none";
-        else { countFeed.style.display = "block"; countSpan.textContent = nodes.length; }
+        countSpan.textContent = nodes.length;
+    }
+
+    function updateListType() {
+        const typeSpan = document.getElementById("list-type");
+        let type = "";
+        if (isCircular && isDoubly) type = "Circular-Doubly";
+        else if (isCircular) type = "Circular-Singly";
+        else if (isDoubly) type = "Linear-Doubly";
+        else type = "Linear-Singly";
+        typeSpan.textContent = type;
     }
 
     function clearCanvas() {
@@ -290,7 +382,16 @@ document.addEventListener('DOMContentLoaded', () => {
         isCircular = !isCircular;
         toggleCircularBtn.textContent = isCircular ? "Make Linear" : "Make Circular";
         rebuildLinks();
+        updateListType();
         logStatus(`List is now ${isCircular ? "Circular" : "Linear"}`, "info");
+    }
+
+    function toggleDoubly() {
+        isDoubly = !isDoubly;
+        toggleDoublyBtn.textContent = isDoubly ? "Make Singly" : "Make Doubly";
+        rebuildLinks();
+        updateListType();
+        logStatus(`List is now ${isDoubly ? "Doubly" : "Singly"}`, "info");
     }
 
     function logStatus(msg, type = "info", timeout = 4000) {
@@ -305,38 +406,57 @@ document.addEventListener('DOMContentLoaded', () => {
 
         entry.textContent = `${msg}`;
         feed.appendChild(entry);
-        feed.scrollTop = feed.scrollHeight; // auto scroll
+        feed.scrollTop = feed.scrollHeight;
 
         setTimeout(() => {
             entry.classList.add("fade-out");
-            setTimeout(() => entry.remove(), 500); // match CSS transition
+            setTimeout(() => entry.remove(), 500);
         }, timeout);
     }
 
     function rebuildLinks() {
         links = [];
-        for (let i = 0; i < nodes.length - 1; i++) links.push({ source: nodes[i], target: nodes[i + 1] });
-        if (isCircular && nodes.length > 1) links.push({ source: nodes[nodes.length - 1], target: nodes[0] });
+
+        for (let i = 0; i < nodes.length - 1; i++) {
+            links.push({ source: nodes[i], target: nodes[i + 1] });
+        }
+
+        if (isCircular && nodes.length > 1) {
+            links.push({ source: nodes[nodes.length - 1], target: nodes[0] });
+        }
+
+        if (isDoubly && nodes.length > 1) {
+            for (let i = 1; i < nodes.length; i++) {
+                links.push({ source: nodes[i], target: nodes[i - 1], backward: true });
+            }
+
+            if (isCircular && nodes.length > 1) {
+                links.push({ source: nodes[0], target: nodes[nodes.length - 1], backward: true });
+            }
+        }
+
         updateNodePositions();
         updateNodeCount();
         updateGraph();
     }
 
-    function insertNodeEnd() {
-        const data = datainput.value.trim();
-        if (!data) return logStatus("Please enter a value to insert", "error");
-        nodes.push({ id: nextId++, text: data });
-        rebuildLinks();
-        logStatus(`Node "${data}" added at the end`, "success");
-        datainput.value = "";
-    }
-
     function insertNodeStart() {
         const data = datainput.value.trim();
         if (!data) return logStatus("Please enter a value to insert", "error");
+
         nodes.unshift({ id: nextId++, text: data });
         rebuildLinks();
         logStatus(`Node "${data}" added at the start`, "success");
+        datainput.value = "";
+    }
+
+    function insertNodeEnd() {
+        const data = datainput.value.trim();
+        if (!data) return logStatus("Please enter a value to insert", "error");
+
+        nodes.push({ id: nextId++, text: data });
+        rebuildLinks();
+        logStatus(`Node "${data}" added at the end`, "success");
         datainput.value = "";
     }
 
@@ -344,8 +464,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = datainput.value.trim();
         const ref = elementinput.value.trim();
         if (!data || !ref) return logStatus("Both node value and reference element required", "error");
+
         const index = nodes.findIndex(n => n.text === ref);
         if (index === -1) return logStatus(`Reference node "${ref}" not found`, "error");
+
         nodes.splice(index, 0, { id: nextId++, text: data });
         rebuildLinks();
         logStatus(`Node "${data}" inserted before "${ref}"`, "success");
@@ -356,8 +478,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = datainput.value.trim();
         const ref = elementinput.value.trim();
         if (!data || !ref) return logStatus("Both node value and reference element required", "error");
+
         const index = nodes.findIndex(n => n.text === ref);
         if (index === -1) return logStatus(`Reference node "${ref}" not found`, "error");
+
         nodes.splice(index + 1, 0, { id: nextId++, text: data });
         rebuildLinks();
         logStatus(`Node "${data}" inserted after "${ref}"`, "success");
@@ -369,14 +493,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const pos = parseInt(posinput.value.trim(), 10);
         if (!data || isNaN(pos)) return logStatus("Both node value and valid position required", "error");
         if (pos < 1 || pos > nodes.length + 1) return logStatus("Position out of range", "error");
+
         nodes.splice(pos - 1, 0, { id: nextId++, text: data });
         rebuildLinks();
         logStatus(`Node "${data}" inserted at position ${pos}`, "success");
         datainput.value = posinput.value = "";
     }
 
+
     function deleteNodeStart() {
         if (!nodes.length) return logStatus("List is empty", "error");
+
         const removed = nodes.shift();
         rebuildLinks();
         logStatus(`Node "${removed.text}" deleted from start`, "success");
@@ -384,6 +511,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function deleteNodeEnd() {
         if (!nodes.length) return logStatus("List is empty", "error");
+
         const removed = nodes.pop();
         rebuildLinks();
         logStatus(`Node "${removed.text}" deleted from end`, "success");
@@ -392,8 +520,10 @@ document.addEventListener('DOMContentLoaded', () => {
     function deleteBeforeNode() {
         const ref = elementinput.value.trim();
         if (!ref) return logStatus("Reference element required", "error");
+
         const index = nodes.findIndex(n => n.text === ref);
         if (index <= 0) return logStatus("No node exists before this reference", "error");
+
         const removed = nodes.splice(index - 1, 1)[0];
         rebuildLinks();
         logStatus(`Node "${removed.text}" deleted before "${ref}"`, "success");
@@ -403,8 +533,10 @@ document.addEventListener('DOMContentLoaded', () => {
     function deleteAfterNode() {
         const ref = elementinput.value.trim();
         if (!ref) return logStatus("Reference element required", "error");
+
         const index = nodes.findIndex(n => n.text === ref);
         if (index === -1 || index === nodes.length - 1) return logStatus("No node exists after this reference", "error");
+
         const removed = nodes.splice(index + 1, 1)[0];
         rebuildLinks();
         logStatus(`Node "${removed.text}" deleted after "${ref}"`, "success");
@@ -415,11 +547,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const pos = parseInt(posinput.value.trim(), 10);
         if (isNaN(pos)) return logStatus("Valid position required", "error");
         if (pos < 1 || pos > nodes.length) return logStatus("Position out of range", "error");
+
         const removed = nodes.splice(pos - 1, 1)[0];
         rebuildLinks();
         logStatus(`Node "${removed.text}" deleted at position ${pos}`, "success");
         posinput.value = "";
     }
+
 
     const performSearch = () => {
         const value = searchInput.value.trim();
@@ -478,17 +612,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function toggleSidebar() {
-    sidebarWrapper.classList.toggle("hidden");
+        sidebarWrapper.classList.toggle("hidden");
 
-    if (sidebarWrapper.classList.contains("hidden")) {
-        toggleSidebarBtn.classList.toggle("left");
-        toggleSidebarBtn.textContent = "☰ Show code";
-        dynamicPanelWrapper.classList.add("hidden");
-    } else {
-        toggleSidebarBtn.classList.toggle("left");
-        toggleSidebarBtn.textContent = "☰ Hide Code";
+        if (sidebarWrapper.classList.contains("hidden")) {
+            toggleSidebarBtn.classList.toggle("left");
+            toggleSidebarBtn.textContent = "☰ Show code";
+            dynamicPanelWrapper.classList.add("hidden");
+        } else {
+            toggleSidebarBtn.classList.toggle("left");
+            toggleSidebarBtn.textContent = "☰ Hide Code";
+        }
     }
-}
 
 
     insertStartBtn.addEventListener("click", insertNodeStart);
@@ -504,6 +638,7 @@ document.addEventListener('DOMContentLoaded', () => {
     deleteAtBtn.addEventListener("click", deleteAt);
 
     toggleCircularBtn.addEventListener("click", toggleCircular);
+    toggleDoublyBtn.addEventListener("click", toggleDoubly);
     clearCanvasBtn.addEventListener("click", clearCanvas);
     searchBtn.addEventListener("click", performSearch);
 
@@ -523,19 +658,19 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.getElementById("copyCodeBtn").addEventListener("click", async () => {
-    const codeEl = document.getElementById("codeContainer");
-    if (!codeEl) return logStatus("Code container not found", "error");
+        const codeEl = document.getElementById("codeContainer");
+        if (!codeEl) return logStatus("Code container not found", "error");
 
-    const codeText = codeEl.textContent.trim();
-    if (!codeText) return logStatus("No code to copy", "error");
+        const codeText = codeEl.textContent.trim();
+        if (!codeText) return logStatus("No code to copy", "error");
 
-    try {
-        await navigator.clipboard.writeText(codeText);
-        logStatus("Code copied to clipboard!", "success");
-    } catch (err) {
-        console.error(err);
-        logStatus("Failed to copy code", "error");
-    }
+        try {
+            await navigator.clipboard.writeText(codeText);
+            logStatus("Code copied to clipboard!", "success");
+        } catch (err) {
+            console.error(err);
+            logStatus("Failed to copy code", "error");
+        }
     });
 
 });

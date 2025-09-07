@@ -1,5 +1,5 @@
 {
-	"C-Insert-Start": "void insertNodeStart(int data){\n\tstruct node *ptr;\n\tptr = (struct node*) malloc(sizeof(struct node));\n\tif (ptr == NULL) {\n\t\tprintf(\"Memory Allocation Failed\\n\");\n\t\treturn;\n\t}\n\tptr -> data = data;\n\tptr -> next = start;\n\tif(start == NULL){\n\t\tstart = last = ptr;\n\t}\n\telse{\n\t\tlast -> next = ptr;\n\t\tstart = ptr;\n\t}\n}",
+	"C-Insert-Start": "void insertNodeStart(int data){\n\tstruct node *ptr;\n\tptr = (struct node*) malloc(sizeof(struct node));\n\tif (ptr == NULL) {\n\t\tprintf(\"Memory Allocation Failed\\n\");\n\t\treturn;\n\t}\n\tptr -> data = data;\n\tif(start == NULL){\n\t\tstart = last = ptr;\n\t\tptr->next = ptr;\n\t}\n\telse{\n\t\tptr -> next = start;\n\t\tlast -> next = ptr;\n\t\tstart = ptr;\n\t}\n}",
 
 	"C-Insert-End": "void insertNodeEnd(int data){\n\tstruct node *ptr;\n\tptr = (struct node*) malloc(sizeof(struct node));\n\tif (ptr == NULL) {\n\t\tprintf(\"Memory Allocation Failed\\n\");\n\t\treturn;\n\t}\n\tptr -> data = data;\n\tptr->next = start;\n\tif(start==NULL){\n\t\tstart = last = ptr;\n\t}\n\telse{\n\t\tlast -> next = ptr;\n\t\tlast = ptr;\n\t}\n}",
 

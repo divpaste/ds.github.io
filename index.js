@@ -521,4 +521,21 @@ document.addEventListener('DOMContentLoaded', () => {
     dynamicPanelClose.addEventListener("click", () => {
         dynamicPanelWrapper.classList.add("hidden");
     });
+
+    document.getElementById("copyCodeBtn").addEventListener("click", async () => {
+    const codeEl = document.getElementById("codeContainer");
+    if (!codeEl) return logStatus("Code container not found", "error");
+
+    const codeText = codeEl.textContent.trim();
+    if (!codeText) return logStatus("No code to copy", "error");
+
+    try {
+        await navigator.clipboard.writeText(codeText);
+        logStatus("Code copied to clipboard!", "success");
+    } catch (err) {
+        console.error(err);
+        logStatus("Failed to copy code", "error");
+    }
+    });
+
 });

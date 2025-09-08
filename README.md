@@ -55,7 +55,7 @@ The tool is designed for **students, educators, and developers** to better under
 ---
 
 ## How to Use  
-1. Go to [Linked List Visualizer (GitHub Pages)](https:/divpaste.github.io/ds.github.io/)
+1. Go to [Linked List Visualizer (GitHub Pages)](divpaste.github.io/ds.github.io/)
 3. Use the **control panel** at the bottom to perform insertions, deletions, and searches.  
 4. Use the **sidebar** to view corresponding code for each operation.  
 5. Toggle between list types (linear, circular, doubly) using the dedicated buttons.  
@@ -71,4 +71,8 @@ The tool is designed for **students, educators, and developers** to better under
 ---
 
 ## License  
-This project is open-source and free to use for educational and personal purposes.  
+This project is open-source and free to use for educational and personal purposes.
+
+## Repository  
+Source code is available here:  
+[GitHub Repository](https://github.com/divpaste/ds.github.io) 

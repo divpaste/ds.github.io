@@ -12,7 +12,7 @@
 
   <!-- Basically Credits: -->
   <div id="credits">
-    <button class="floating-btn">Linked List Visualizer<br>By Param & Div</button>
+    <button tabindex="-1">Linked List Visualizer (By Param & Div)</button>
   </div>
 
   <!-- Area to House Nodes -->
@@ -20,9 +20,6 @@
     <!-- Svg to print the Desmos BG -->
     <svg>
       <defs>
-        <filter id="blur-effect">
-          <feGaussianBlur stdDeviation="1" />
-        </filter>
         <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
           <rect width="40" height="40" fill="#1b1b2f" />
           <path d="M40 0 H0 V40" fill="none" stroke="#333" stroke-width="1" />
@@ -71,8 +68,9 @@
                 <button type="button" id="deleteBeforeBtn">Delete Before</button>
                 <button type="button" id="deleteAfterBtn">Delete After</button>
               </div>
-              <div class="nth-button">
-                <button type="button" id="deleteAtBtn">Delete n<sup>th</sup> Node</button>
+              <div>
+                <button type="button" id="deleteAtBtn">Del n<sup>th</sup> Node</button>
+                <button type="button" id="deleteValueBtn">Delete Value</button>
               </div>
             </div>
           </div>
@@ -80,8 +78,10 @@
       </div>
       <div id="Misc">
         <div>
+        <div id="toggle-btn-wrapper">
+          <button id="toggleBlindModeBtn" style="border:none">Blind: OFF</button>
           <button style="color: #ff4d4d" id="clear-canvas">Clear Canvas</button>
-        </div>
+        </div></div>
         <div>
           <div id="toggle-btn-wrapper">
             <button type="button" id="makeCircularBtn">Make Circular</button>
@@ -111,7 +111,9 @@
   </div>
 
   <!-- Display Code button -->
-  <button id="sidebar-toggle" class="floating-btn" style="border:none">↤ Code</button>
+  <div>
+    <button id="sidebar-toggle" class="floating-btn" style="border:none">↤ Code</button>
+  </div>
 
   <!-- Code Panel -->
   <div id="sidebar-wrapper" class="hidden">

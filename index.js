@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const deleteBeforeBtn = document.getElementById("deleteBeforeBtn");
     const deleteAfterBtn = document.getElementById("deleteAfterBtn");
     const deleteAtBtn = document.getElementById("deleteAtBtn");
+    const deleteValueBtn = document.getElementById("deleteValueBtn");
 
     const searchInput = document.getElementById("searchInput");
     const searchBtn = document.getElementById("searchBtn");
@@ -22,6 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const toggleCircularBtn = document.getElementById("makeCircularBtn");
     const toggleDoublyBtn = document.getElementById("makeDoublyBtn");
     const clearCanvasBtn = document.getElementById("clear-canvas");
+    const toggleBlindModeBtn = document.getElementById("toggleBlindModeBtn");
 
     const toggleControlsBtn = document.getElementById("control-toggle");
     const controlWrapper = document.getElementById("control-wrapper");
@@ -87,6 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let nextId = 0;
     let isCircular = false;
     let isDoubly = false;
+    let isBlindMode = false;
 
     const svg = d3.select("svg");
     const g = svg.append("g");
@@ -107,13 +110,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const simulation = d3.forceSimulation(nodes)
         .force("link", d3.forceLink(links).id(d => d.id).distance(150))
         .force("charge", d3.forceManyBody().strength(-500))
-        .force("center", d3.forceCenter(window.innerWidth / 2, window.innerHeight / 2));
+        .force("center", d3.forceCenter(window.innerWidth / 2, window.innerHeight / 2))
 
     updateListType();
 
     function updateGraph() {
         let nodeSel = g.selectAll(".node").data(nodes, d => d.id);
         let linkSel = g.selectAll(".link").data(links);
+
+        g.selectAll(".node").classed("highlight", false).style("opacity", 1);
+        g.selectAll(".link, .backward-link").style("opacity", 1);
 
         nodeSel.exit().remove();
         linkSel.exit().remove();
@@ -207,38 +213,44 @@ document.addEventListener('DOMContentLoaded', () => {
 
         nodeSel
             .on("mouseover", function (event, d) {
-                if (d.dragging) return; // skip if dragging
+                if (!isBlindMode) return; // normal hover applies separately
                 d.hovered = true;
 
-                // Reduce opacity of all nodes and links
-                g.selectAll(".node").interrupt("hover").transition("hover").duration(50)
-                    .style("opacity", 0.2);
-                g.selectAll(".link, .backward-link").interrupt("hover").transition("hover").duration(50)
-                    .style("opacity", 0.2);
+                // Reveal hovered node
+                d3.select(this).transition().duration(100).style("opacity", 1);
 
-                // Highlight hovered node fully
-                g.selectAll(".node").filter(n => n.id === d.id)
-                    .transition("hover").duration(50).style("opacity", 1);
-
-                // Highlight only the outer rect of forward-connected nodes
+                // Reveal connected forward nodes
                 g.selectAll(".node").filter(n =>
                     links.some(l => l.source.id === d.id && l.target.id === n.id)
-                ).select("rect.outer").transition("hover").duration(50).style("opacity", 1);
+                ).transition().duration(100).style("opacity", 1);
 
-                // Highlight only the outer rect of backward-connected nodes
+                // Reveal connected backward nodes if doubly
                 g.selectAll(".node").filter(n =>
                     links.some(l => l.backward && l.source.id === d.id && l.target.id === n.id)
-                ).select("rect.outer").transition("hover").duration(50).style("opacity", 1);
+                ).transition().duration(100).style("opacity", 1);
 
-                // Highlight links originating from this node
+                // Reveal outgoing links
                 g.selectAll(".link, .backward-link").filter(l => l.source.id === d.id)
-                    .transition("hover").duration(50).style("opacity", 1);
+                    .transition().duration(100).style("opacity", 1);
             })
             .on("mouseout", function (event, d) {
-                d.hovered = false;
-                g.selectAll(".node").interrupt("hover").transition("hover").duration(50).style("opacity", 1);
-                g.selectAll(".link, .backward-link").interrupt("hover").transition("hover").duration(50).style("opacity", 1);
+                if (!isBlindMode) return;
+
+                // Optionally, hide nodes again for step-by-step traversal
+                d3.select(this).transition().duration(100).style("opacity", 0);
+
+                g.selectAll(".node").filter(n =>
+                    links.some(l => l.source.id === d.id && l.target.id === n.id)
+                ).transition().duration(100).style("opacity", 0);
+
+                g.selectAll(".node").filter(n =>
+                    links.some(l => l.backward && l.source.id === d.id && l.target.id === n.id)
+                ).transition().duration(100).style("opacity", 0);
+
+                g.selectAll(".link, .backward-link").filter(l => l.source.id === d.id)
+                    .transition().duration(100).style("opacity", 0);
             });
+
 
         linkSel = linkSel.enter()
             .append("line")
@@ -494,6 +506,12 @@ document.addEventListener('DOMContentLoaded', () => {
         simulation.alpha(1).restart();
         document.getElementById("nodeCount").textContent = 0;
         logStatus("Canvas cleared", "info");
+
+        isBlindMode = false;
+        g.selectAll(".node").style("opacity", 1);
+        g.selectAll(".link, .backward-link").style("opacity", 1);
+        d3.select("svg rect").attr("fill", "url(#grid)");
+        document.getElementById("toggleBlindModeBtn").textContent = "Blind: OFF";
     }
 
     function openDynamicPanel(title, htmlContent = "") {
@@ -522,7 +540,7 @@ document.addEventListener('DOMContentLoaded', () => {
         logStatus(`List: ${isDoubly ? "Doubly" : "Singly"} ${isCircular ? "Circular" : "Linear"}`, "info");
     }
 
-    function logStatus(msg, type = "info", timeout = 100) {
+    function logStatus(msg, type = "info", timeout = 4000) {
         const feed = document.getElementById("status-feed");
         const entry = document.createElement("div");
         entry.classList.add("status-msg");
@@ -657,6 +675,18 @@ document.addEventListener('DOMContentLoaded', () => {
         posinput.value = "";
     }
 
+    function deleteValue() {
+        const value = elementinput.value.trim();
+        if (!value) return logStatus("Valid value required", "error");
+
+        const index = nodes.findIndex(n => n.text === value);
+        if (index === -1) return logStatus(`Value "${value}" not found`, "error");
+
+        const removed = nodes.splice(index, 1)[0];
+        rebuildLinks();
+        logStatus(`Node "${removed.text}" deleted (by value)`, "delete");
+        elementinput.value = "";
+    }
 
     const performSearch = () => {
         const value = searchInput.value.trim();
@@ -664,42 +694,65 @@ document.addEventListener('DOMContentLoaded', () => {
             logStatus("Cannot search for an empty value", "error");
             return;
         }
+
         g.selectAll(".node").classed("highlight", false);
         g.selectAll(".highlight-marker").remove();
+
         const matchingNodes = nodes.filter(n => n.text === value);
 
         if (matchingNodes.length > 0) {
             matchingNodes.forEach(node => {
-                g.selectAll(".node").filter(d => d.id === node.id).classed("highlight", true);
+                g.selectAll(".node")
+                    .filter(d => d.id === node.id)
+                    .classed("highlight", true);
+
                 const index = nodes.indexOf(node);
                 const dataCellWidth = Math.max(60, node.text.length * 8);
-                const circleX = 10 + dataCellWidth + 15;
+
+                // Adjust position depending on list type
+                const markerX = node.x + 10 + dataCellWidth / 2;
+                const markerY = node.y - (isDoubly ? 20 : 10);
 
                 g.append("text")
                     .attr("class", "highlight-marker")
-                    .attr("x", node.x + circleX)
-                    .attr("y", node.y - 10)
+                    .attr("x", markerX)
+                    .attr("y", markerY)
                     .attr("text-anchor", "middle")
                     .attr("fill", "rgb(255, 255, 143)")
                     .attr("font-weight", "bold")
                     .style("opacity", 1)
                     .text(`Index: ${index + 1}`)
                     .transition()
-                    .duration(2000)
+                    .duration(1600)
+                    .transition()
+                    .duration(400)
+                    .style("opacity", 0)
                     .remove();
             });
 
+            // highlight nodes
             g.selectAll(".node.highlight").selectAll("rect, circle")
-                .transition().duration(400).style("opacity", 0.3)
-                .transition().duration(400).style("opacity", 1)
-                .transition().duration(400).style("opacity", 0.3)
-                .transition().duration(400).style("opacity", 1)
-                .on("end", function () { d3.select(this.parentNode).classed("highlight", false); });
+                .classed("flash", true);
 
-            logStatus(`Found ${matchingNodes.length} ${matchingNodes.length === 1 ? "instance" : "instances"} of "${value}"`, "success");
-        } else {
-            logStatus(`"${value}" not present`, "error");
-        }
+            // highlight links
+            g.selectAll(".link, .backward-link")
+                .filter(l => matchingNodes.some(n => l.source.id === n.id))
+                .classed("flash", true);
+
+            // cleanup after animation ends
+            setTimeout(() => {
+                g.selectAll(".node.highlight")
+                    .classed("highlight", false)
+                    .selectAll("rect, circle").classed("flash", false);
+
+                g.selectAll(".link, .backward-link").classed("flash", false);
+            }, 3 * 800); // match cycles*duration
+
+            logStatus(
+                `Found ${matchingNodes.length} ${matchingNodes.length === 1 ? "instance" : "instances"} of "${value}"`,
+                "success"
+            );
+        } else { logStatus(`"${value}" not present`, "error"); }
         searchInput.value = "";
     };
 
@@ -727,7 +780,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-
     function toggleSidebar() {
         sidebarWrapper.classList.toggle("hidden");
 
@@ -741,6 +793,31 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function toggleBlindMode() {
+        isBlindMode = !isBlindMode;
+
+        const bgRect = d3.select("svg rect"); // selects your full-size rect
+
+        if (isBlindMode) {
+            g.selectAll(".node").style("opacity", 0);
+            g.selectAll(".link, .backward-link").style("opacity", 0);
+
+            // Change background fill
+            bgRect.attr("fill", "#12121f"); // dark color
+
+            logStatus("Blind mode enabled: Only start/end pointers visible", "info");
+            toggleBlindModeBtn.textContent = "Blind: ON";
+        } else {
+            g.selectAll(".node").style("opacity", 1);
+            g.selectAll(".link, .backward-link").style("opacity", 1);
+
+            // Restore grid pattern
+            bgRect.attr("fill", "url(#grid)");
+
+            logStatus("Blind mode disabled", "info");
+            toggleBlindModeBtn.textContent = "Blind: OFF";
+        }
+    }
 
     insertStartBtn.addEventListener("click", insertNodeStart);
     insertEndBtn.addEventListener("click", insertNodeEnd);
@@ -753,11 +830,13 @@ document.addEventListener('DOMContentLoaded', () => {
     deleteBeforeBtn.addEventListener("click", deleteBeforeNode);
     deleteAfterBtn.addEventListener("click", deleteAfterNode);
     deleteAtBtn.addEventListener("click", deleteAt);
+    deleteValueBtn.addEventListener("click", deleteValue);
 
     toggleCircularBtn.addEventListener("click", toggleCircular);
     toggleDoublyBtn.addEventListener("click", toggleDoubly);
     clearCanvasBtn.addEventListener("click", clearCanvas);
     searchBtn.addEventListener("click", performSearch);
+    toggleBlindModeBtn.addEventListener("click", toggleBlindMode);
 
     toggleControlsBtn.addEventListener("click", toggleControls);
     toggleSidebarBtn.addEventListener("click", toggleSidebar);
@@ -773,6 +852,8 @@ document.addEventListener('DOMContentLoaded', () => {
     dynamicPanelClose.addEventListener("click", () => {
         dynamicPanelWrapper.classList.add("hidden");
     });
+
+
 
     document.getElementById("copyCodeBtn").addEventListener("click", async () => {
         const codeEl = document.getElementById("codeContainer");

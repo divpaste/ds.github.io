@@ -20,6 +20,9 @@
     <!-- Svg to print the Desmos BG -->
     <svg>
       <defs>
+        <filter id="blur-effect">
+          <feGaussianBlur stdDeviation="1" />
+        </filter>
         <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
           <rect width="40" height="40" fill="#1b1b2f" />
           <path d="M40 0 H0 V40" fill="none" stroke="#333" stroke-width="1" />
@@ -30,7 +33,7 @@
   </div>
 
   <!-- Show Controls Button -->
-  <button id="control-toggle" class="floating-btn" style="border:none">↑ Show Controls</button>
+  <button id="control-toggle" class="floating-btn" style="border:none">↑ Controls</button>
 
   <!-- Control Panel -->
   <div id="control-wrapper" class="hidden">
@@ -103,12 +106,12 @@
 
   <!-- Node Counter -->
   <div id="node-count-feed">
-    <div><span style="color:orange">Type:</span> <span id="list-type"></span></div>
-    <div><span style="color:orange">Count:</span> <span id="nodeCount">0</span></div>
+    <div><span>Count:</span> <span id="nodeCount">0</span></div>
+    <div><span id="list-type"></span></div>
   </div>
 
   <!-- Display Code button -->
-  <button id="sidebar-toggle" class="floating-btn" style="border:none">☰ Codes:</button>
+  <button id="sidebar-toggle" class="floating-btn" style="border:none">↤ Code</button>
 
   <!-- Code Panel -->
   <div id="sidebar-wrapper" class="hidden">

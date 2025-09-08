@@ -11,6 +11,7 @@ body {
     height: 100vh;
     display: flex;
     overflow: hidden;
+    background: #1b1b2f;
 }
 
 #credits {
@@ -32,7 +33,7 @@ svg {
 }
 
 .node.highlight rect{
-  stroke: yellow;
+  stroke: lightyellow;
   stroke-width: 3;
 }
 
@@ -40,10 +41,11 @@ svg {
   fill: white;
   rx: 5;
   ry: 5;
+  filter: url(#blur-effect);
 }
 
 .node .outer {
-  fill: none;
+  fill: transparent;
   stroke: white;
   stroke-width: 2;
   rx: 15;
@@ -55,8 +57,20 @@ svg {
   text-anchor: middle;
   alignment-baseline: middle;
   font-family: monospace;
-  font-size: 16px;
+  font-size: 14px;
 }
+
+.pseudo-node {
+  fill: none;
+  stroke: yellowgreen;
+  stroke-width: 2;
+}
+
+.pseudo-text {
+  fill: yellowgreen;
+  font-weight: bold;
+}
+
 
 .floating-btn {
     background: rgba(42, 42, 61, 0);
@@ -81,7 +95,7 @@ svg {
     bottom:25px;
     left:50%;
     transform:translate(-50%) translateY(0px);
-    transition:transform 0.3s ease;
+    transition:transform 0.1s ease;
     z-index:5;
 }
 
@@ -94,7 +108,7 @@ svg {
     left: 50%;
     bottom: 0;
     transform: translateX(-50%) translateY(0px);
-    transition: transform 0.3s ease;
+    transition: transform 0.1s ease;
     z-index: 10;
     opacity:1;
     pointer-events:all;
@@ -223,16 +237,16 @@ svg {
     opacity: 0;
 }
 
-.status-welcome{
-    color: #4dff88;
-}
-
 .status-error {
     color: #ff4d4d;
 }
 
-.status-info {
+.status-delete {
     color: #FFD54F;
+}
+
+.status-info {
+    color: white;
 }
 
 .status-success {
@@ -266,7 +280,7 @@ svg {
     position:fixed;
     top:10px;
     right:-5px;
-    transition:transform 0.3s ease;
+    transition:transform 0.1s ease;
     z-index:5;
 }
 
@@ -287,7 +301,7 @@ svg {
     padding: 20px;
     overflow-y: auto;
     transform: translateX(0px);
-    transition: transform 0.3s ease;
+    transition: transform 0.1s ease;
     z-index: 10;
     opacity:1;
     pointer-events:all;
@@ -358,7 +372,7 @@ svg {
     padding: 20px;
     overflow-y: auto;
     transform: translateX(0px);
-    transition: transform 0.3s ease;
+    transition: transform 0.1s ease;
     z-index: 20;
     opacity:1;
     pointer-events:all;

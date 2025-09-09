@@ -118,8 +118,8 @@ document.addEventListener('DOMContentLoaded', () => {
         let nodeSel = g.selectAll(".node").data(nodes, d => d.id);
         let linkSel = g.selectAll(".link").data(links);
 
-        g.selectAll(".node").classed("highlight", false).style("opacity", 1);
-        g.selectAll(".link, .backward-link").style("opacity", 1);
+        g.selectAll(".node").classed("highlight", false).style("opacity", d => { if (!isBlindMode) return 1; return (d === nodes[0] || d === nodes[nodes.length - 1]) ? 1 : 0; });
+        g.selectAll(".link, .backward-link").style("opacity", d => (isBlindMode ? 0 : 1));
 
         nodeSel.exit().remove();
         linkSel.exit().remove();
@@ -127,6 +127,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const nodeEnter = nodeSel.enter()
             .append("g")
             .attr("class", "node")
+            .style("opacity", d => {
+                if (!isBlindMode) return 1;
+                return (d === nodes[0] || d === nodes[nodes.length - 1]) ? 1 : 0;
+            })
             .call(d3.drag()
                 .on("start", dragstarted)
                 .on("drag", dragged)
@@ -213,44 +217,76 @@ document.addEventListener('DOMContentLoaded', () => {
 
         nodeSel
             .on("mouseover", function (event, d) {
-                if (!isBlindMode) return; // normal hover applies separately
+                if (d.dragging) return;
                 d.hovered = true;
 
-                // Reveal hovered node
-                d3.select(this).transition().duration(100).style("opacity", 1);
+                if (isBlindMode) {
+                    // --- Blind mode reveal ---
+                    d3.select(this).transition().duration(100).style("opacity", 1);
 
-                // Reveal connected forward nodes
-                g.selectAll(".node").filter(n =>
-                    links.some(l => l.source.id === d.id && l.target.id === n.id)
-                ).transition().duration(100).style("opacity", 1);
+                    // Reveal connected forward nodes
+                    g.selectAll(".node").filter(n =>
+                        links.some(l => l.source.id === d.id && l.target.id === n.id)
+                    ).transition().duration(100).style("opacity", 1);
 
-                // Reveal connected backward nodes if doubly
-                g.selectAll(".node").filter(n =>
-                    links.some(l => l.backward && l.source.id === d.id && l.target.id === n.id)
-                ).transition().duration(100).style("opacity", 1);
+                    // Reveal connected backward nodes
+                    g.selectAll(".node").filter(n =>
+                        links.some(l => l.backward && l.source.id === d.id && l.target.id === n.id)
+                    ).transition().duration(100).style("opacity", 1);
 
-                // Reveal outgoing links
-                g.selectAll(".link, .backward-link").filter(l => l.source.id === d.id)
-                    .transition().duration(100).style("opacity", 1);
+                    // Reveal outgoing links
+                    g.selectAll(".link, .backward-link").filter(l => l.source.id === d.id)
+                        .transition().duration(100).style("opacity", 1);
+                } else {
+                    // --- Normal mode highlight ---
+                    g.selectAll(".node").interrupt("hover").transition("hover").duration(50)
+                        .style("opacity", 0.2);
+                    g.selectAll(".link, .backward-link").interrupt("hover").transition("hover").duration(50)
+                        .style("opacity", 0.2);
+
+                    // Highlight hovered node
+                    g.selectAll(".node").filter(n => n.id === d.id)
+                        .transition("hover").duration(50).style("opacity", 1);
+
+                    // Highlight forward-connected nodes (outer rect only)
+                    g.selectAll(".node").filter(n =>
+                        links.some(l => l.source.id === d.id && l.target.id === n.id)
+                    ).select("rect.outer").transition("hover").duration(50).style("opacity", 1);
+
+                    // Highlight backward-connected nodes (outer rect only)
+                    g.selectAll(".node").filter(n =>
+                        links.some(l => l.backward && l.source.id === d.id && l.target.id === n.id)
+                    ).select("rect.outer").transition("hover").duration(50).style("opacity", 1);
+
+                    // Highlight outgoing links
+                    g.selectAll(".link, .backward-link").filter(l => l.source.id === d.id)
+                        .transition("hover").duration(50).style("opacity", 1);
+                }
             })
             .on("mouseout", function (event, d) {
-                if (!isBlindMode) return;
+                d.hovered = false;
 
-                // Optionally, hide nodes again for step-by-step traversal
-                d3.select(this).transition().duration(100).style("opacity", 0);
+                if (isBlindMode) {
+                    // Hide node again if not start/end
+                    if (d !== nodes[0] && d !== nodes[nodes.length - 1]) {
+                        d3.select(this).transition().duration(100).style("opacity", 0);
+                    }
 
-                g.selectAll(".node").filter(n =>
-                    links.some(l => l.source.id === d.id && l.target.id === n.id)
-                ).transition().duration(100).style("opacity", 0);
+                    // Hide neighbors
+                    g.selectAll(".node").filter(n =>
+                        links.some(l => (l.source.id === d.id && l.target.id === n.id) ||
+                            (l.backward && l.source.id === d.id && l.target.id === n.id))
+                    ).transition().duration(100).style("opacity", 0);
 
-                g.selectAll(".node").filter(n =>
-                    links.some(l => l.backward && l.source.id === d.id && l.target.id === n.id)
-                ).transition().duration(100).style("opacity", 0);
-
-                g.selectAll(".link, .backward-link").filter(l => l.source.id === d.id)
-                    .transition().duration(100).style("opacity", 0);
+                    // Hide outgoing links
+                    g.selectAll(".link, .backward-link").filter(l => l.source.id === d.id)
+                        .transition().duration(100).style("opacity", 0);
+                } else {
+                    // Reset everything
+                    g.selectAll(".node").interrupt("hover").transition("hover").duration(50).style("opacity", 1);
+                    g.selectAll(".link, .backward-link").interrupt("hover").transition("hover").duration(50).style("opacity", 1);
+                }
             });
-
 
         linkSel = linkSel.enter()
             .append("line")
@@ -279,7 +315,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 .append("line")
                 .attr("class", d => d.backward ? "backward-link" : "link")
                 .attr("stroke-width", 2)
-                .attr("marker-end", "url(#arrow)");
+                .attr("marker-end", "url(#arrow)")
+                .style("opacity", d => (isBlindMode ? 0 : 1));
 
             // merge
             const allLinks = linkEnter.merge(linkSel);
@@ -313,7 +350,8 @@ document.addEventListener('DOMContentLoaded', () => {
             nodeSel.attr("transform", d => `translate(${d.x},${d.y})`);
 
             // --- POINTERS ---
-            g.selectAll(".start-pointer, .end-pointer").remove();
+            g.selectAll(".start-pointer, .end-pointer, .null-pointer").remove();
+
             if (nodes.length > 0) {
                 const startNode = nodes[0];
                 const endNode = nodes[nodes.length - 1];
@@ -321,28 +359,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 const circleY = isDoubly ? 80 : 58;
                 const circleXVal = d => 10 + Math.max(60, d.text.length * 8) / 2;
                 const leftCircleX = circleXVal(startNode) - gap / 2;
-                const rightCircleX = circleXVal(endNode) - gap / 2;
+                const rightCircleX = circleXVal(endNode) + gap / 2;
+
+                // Gradient for null pointers
+                let nullGrad = defs.select("#null-pointer-gradient");
+                if (nullGrad.empty()) {
+                    nullGrad = defs.append("linearGradient")
+                        .attr("id", "null-pointer-gradient")
+                        .attr("gradientUnits", "userSpaceOnUse");
+                    nullGrad.append("stop").attr("offset", "0%").attr("stop-color", "#ff4d4d");
+                    nullGrad.append("stop").attr("offset", "40%").attr("stop-color", "white");
+
+                }
 
                 if (nodes.length === 1) {
-                    // Single node: draw one pointer with combined label
-                    g.append("line")
-                        .attr("class", "end-pointer")
-                        .attr("x1", startNode.x + leftCircleX)
-                        .attr("y1", startNode.y + circleY + 50)
-                        .attr("x2", startNode.x + leftCircleX)
-                        .attr("y2", startNode.y + circleY + 5)
-                        .attr("stroke", "white")
-                        .attr("stroke-width", 2)
-                        .attr("marker-end", "url(#arrow)");
-
-                    g.append("text")
-                        .attr("class", "end-pointer")
-                        .attr("x", startNode.x + leftCircleX)
-                        .attr("y", startNode.y + circleY + 65)
-                        .attr("fill", "white")
-                        .attr("text-anchor", "middle")
-                        .text("End");
-
+                    // Single node
+                    // Start pointer (solid)
                     g.append("line")
                         .attr("class", "start-pointer")
                         .attr("x1", startNode.x + leftCircleX - 50)
@@ -361,7 +393,67 @@ document.addEventListener('DOMContentLoaded', () => {
                         .attr("text-anchor", "middle")
                         .text("Start");
 
+                    // End pointer (solid)
+                    g.append("line")
+                        .attr("class", "end-pointer")
+                        .attr("x1", startNode.x + leftCircleX)
+                        .attr("y1", startNode.y + circleY + 50)
+                        .attr("x2", startNode.x + leftCircleX)
+                        .attr("y2", startNode.y + circleY + 5)
+                        .attr("stroke", "white")
+                        .attr("stroke-width", 2)
+                        .attr("marker-end", "url(#arrow)");
+
+                    g.append("text")
+                        .attr("class", "end-pointer")
+                        .attr("x", startNode.x + leftCircleX)
+                        .attr("y", startNode.y + circleY + 65)
+                        .attr("fill", "white")
+                        .attr("text-anchor", "middle")
+                        .text("End");
+
+                    // Null pointer with gradient
+                    g.append("line")
+                        .attr("class", "null-pointer")
+                        .attr("x1", startNode.x + rightCircleX)
+                        .attr("y1", startNode.y + circleY)
+                        .attr("x2", startNode.x + rightCircleX + 50)
+                        .attr("y2", startNode.y + circleY)
+                        .attr("stroke", "url(#null-pointer-gradient)")
+                        .attr("stroke-width", 2)
+                        .attr("marker-end", "url(#arrow)");
+
+                    g.append("text")
+                        .attr("class", "null-pointer")
+                        .attr("x", startNode.x + rightCircleX + 80)
+                        .attr("y", startNode.y + circleY + 5)
+                        .attr("fill", "white")
+                        .attr("text-anchor", "middle")
+                        .text("Null");
+
+                    if (isDoubly) {
+                        // Left null pointer gradient
+                        g.append("line")
+                            .attr("class", "null-pointer")
+                            .attr("x1", startNode.x + leftCircleX - 5)
+                            .attr("y1", startNode.y + 20)
+                            .attr("x2", startNode.x + leftCircleX - 50)
+                            .attr("y2", startNode.y + 20)
+                            .attr("stroke", "url(#null-pointer-gradient)")
+                            .attr("stroke-width", 2)
+                            .attr("marker-end", "url(#arrow)");
+
+                        g.append("text")
+                            .attr("class", "null-pointer")
+                            .attr("x", startNode.x + leftCircleX - 80)
+                            .attr("y", startNode.y + 25)
+                            .attr("fill", "white")
+                            .attr("text-anchor", "middle")
+                            .text("Null");
+                    }
                 } else {
+                    // Multiple nodes
+                    // Start pointer (solid)
                     g.append("line")
                         .attr("class", "start-pointer")
                         .attr("x1", startNode.x + leftCircleX)
@@ -380,12 +472,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         .attr("text-anchor", "middle")
                         .text("Start");
 
-                    // End pointer
+                    // End pointer (solid)
                     g.append("line")
                         .attr("class", "end-pointer")
-                        .attr("x1", endNode.x + rightCircleX)
+                        .attr("x1", endNode.x + leftCircleX)
                         .attr("y1", endNode.y + circleY + 50)
-                        .attr("x2", endNode.x + rightCircleX)
+                        .attr("x2", endNode.x + leftCircleX)
                         .attr("y2", endNode.y + circleY)
                         .attr("stroke", "white")
                         .attr("stroke-width", 2)
@@ -393,11 +485,53 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     g.append("text")
                         .attr("class", "end-pointer")
-                        .attr("x", endNode.x + rightCircleX)
+                        .attr("x", endNode.x + leftCircleX)
                         .attr("y", endNode.y + circleY + 65)
                         .attr("fill", "white")
                         .attr("text-anchor", "middle")
                         .text("End");
+
+                    // Null pointer right (gradient)
+                    if (!isCircular) {
+                        g.append("line")
+                            .attr("class", "null-pointer")
+                            .attr("x1", endNode.x + rightCircleX)
+                            .attr("y1", endNode.y + circleY)
+                            .attr("x2", endNode.x + rightCircleX + 50)
+                            .attr("y2", endNode.y + circleY)
+                            .attr("stroke", "url(#null-pointer-gradient)")
+                            .attr("stroke-width", 2)
+                            .attr("marker-end", "url(#arrow)");
+
+                        g.append("text")
+                            .attr("class", "null-pointer")
+                            .attr("x", endNode.x + rightCircleX + 80)
+                            .attr("y", endNode.y + circleY + 5)
+                            .attr("fill", "white")
+                            .attr("text-anchor", "middle")
+                            .text("Null");
+                    }
+
+                    // Null pointer left (gradient) for doubly linked
+                    if (isDoubly && !isCircular) {
+                        g.append("line")
+                            .attr("class", "null-pointer")
+                            .attr("x1", startNode.x + leftCircleX - 5)
+                            .attr("y1", startNode.y + 20)
+                            .attr("x2", startNode.x + leftCircleX - 50)
+                            .attr("y2", startNode.y + 20)
+                            .attr("stroke", "url(#null-pointer-gradient)")
+                            .attr("stroke-width", 2)
+                            .attr("marker-end", "url(#arrow)");
+
+                        g.append("text")
+                            .attr("class", "null-pointer")
+                            .attr("x", startNode.x + leftCircleX - 80)
+                            .attr("y", startNode.y + 25)
+                            .attr("fill", "white")
+                            .attr("text-anchor", "middle")
+                            .text("Null");
+                    }
                 }
             }
 
@@ -785,11 +919,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (sidebarWrapper.classList.contains("hidden")) {
             toggleSidebarBtn.classList.toggle("left");
-            toggleSidebarBtn.textContent = "↤ Code";
+            toggleSidebarBtn.textContent = "↤ Code {}";
             dynamicPanelWrapper.classList.add("hidden");
         } else {
             toggleSidebarBtn.classList.toggle("left");
-            toggleSidebarBtn.textContent = "⇥ Code";
+            toggleSidebarBtn.textContent = "⇥ Code {}";
         }
     }
 

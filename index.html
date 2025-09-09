@@ -78,10 +78,11 @@
       </div>
       <div id="Misc">
         <div>
-        <div id="toggle-btn-wrapper">
-          <button id="toggleBlindModeBtn" style="border:none">Blind: OFF</button>
-          <button style="color: #ff4d4d" id="clear-canvas">Clear Canvas</button>
-        </div></div>
+          <div id="toggle-btn-wrapper">
+            <button id="toggleBlindModeBtn" style="border:none">Blind: OFF</button>
+            <button style="color: #ff4d4d" id="clear-canvas">Clear Canvas</button>
+          </div>
+        </div>
         <div>
           <div id="toggle-btn-wrapper">
             <button type="button" id="makeCircularBtn">Make Circular</button>
@@ -112,23 +113,14 @@
 
   <!-- Display Code button -->
   <div>
-    <button id="sidebar-toggle" class="floating-btn" style="border:none">↤ Code</button>
+    <button id="sidebar-toggle" class="floating-btn" style="border:none">↤ Code {}</button>
   </div>
 
   <!-- Code Panel -->
   <div id="sidebar-wrapper" class="hidden">
     <div id="sidebar-panel">
       <fieldset>
-        <legend>Misc.</legend>
-
-        <div class="sidebar-row">
-          <button id="Search">Search</button>
-          <button id="Count">Count</button>
-        </div>
-      </fieldset>
-
-      <fieldset>
-        <legend>Linear</legend>
+        <legend>Singly-Linear</legend>
 
         <div class="sidebar-row">
           <button id="L-Insert-Start">Insert Start</button>
@@ -156,7 +148,7 @@
       </fieldset>
 
       <fieldset>
-        <legend>Circular</legend>
+        <legend>Singly-Circular</legend>
 
         <div class="sidebar-row">
           <button id="C-Insert-Start">Insert Start</button>
@@ -181,6 +173,71 @@
           <button id="C-Delete-At">Delete At</button>
         </div>
 
+      </fieldset>
+
+      <fieldset>
+        <legend>Doubly-Linear</legend>
+
+        <div class="sidebar-row">
+          <button id="L-Insert-Start">Insert Start</button>
+          <button id="L-Insert-End">Insert End</button>
+        </div>
+        <div class="sidebar-row">
+          <button id="L-Insert-Before">Insert Before</button>
+          <button id="L-Insert-After">Insert After</button>
+        </div>
+        <div class="sidebar-row">
+          <button id="L-Insert-At">Insert At</button>
+        </div>
+        <div class="sidebar-row">
+          <button id="L-Delete-Start">Delete Start</button>
+          <button id="L-Delete-End">Delete End</button>
+        </div>
+        <div class="sidebar-row">
+          <button id="L-Delete-Before">Delete Before</button>
+          <button id="L-Delete-After">Delete After</button>
+        </div>
+        <div class="sidebar-row">
+          <button id="L-Delete-At">Delete At</button>
+        </div>
+
+      </fieldset>
+
+      <fieldset>
+        <legend>Doubly-Circular</legend>
+
+        <div class="sidebar-row">
+          <button id="L-Insert-Start">Insert Start</button>
+          <button id="L-Insert-End">Insert End</button>
+        </div>
+        <div class="sidebar-row">
+          <button id="L-Insert-Before">Insert Before</button>
+          <button id="L-Insert-After">Insert After</button>
+        </div>
+        <div class="sidebar-row">
+          <button id="L-Insert-At">Insert At</button>
+        </div>
+        <div class="sidebar-row">
+          <button id="L-Delete-Start">Delete Start</button>
+          <button id="L-Delete-End">Delete End</button>
+        </div>
+        <div class="sidebar-row">
+          <button id="L-Delete-Before">Delete Before</button>
+          <button id="L-Delete-After">Delete After</button>
+        </div>
+        <div class="sidebar-row">
+          <button id="L-Delete-At">Delete At</button>
+        </div>
+
+      </fieldset>
+
+      <fieldset>
+        <legend>Misc.</legend>
+
+        <div class="sidebar-row">
+          <button id="Search">Search</button>
+          <button id="Count">Count</button>
+        </div>
       </fieldset>
     </div>
   </div>

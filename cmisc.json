@@ -1,0 +1,5 @@
+{
+  "search_c": "int search_c(int data) {\n    struct node *temp = start;\n    int pos = 0;\n    if (start == NULL) {\n        return -1;\n    }\n    do {\n        if (temp->data == data) {\n            return pos;\n        }\n        temp = temp->next;\n        pos++;\n    } while (temp != start);\n    return -2;\n}",
+
+  "count_c": "int count_c() {\n    if (start == NULL) {\n        return 0;\n    }\n    struct node *temp = start;\n    int count = 0;\n    do {\n        temp = temp->next;\n        count++;\n    } while(temp != start);\n    return count;\n}"
+}

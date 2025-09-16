@@ -36,53 +36,38 @@ document.addEventListener('DOMContentLoaded', () => {
     const dynamicPanelContent = document.getElementById("dynamic-panel-content");
     const dynamicPanelClose = document.getElementById("dynamic-panel-close");
 
-    fetch("linearlinkedfuncs.json")
-        .then(res => res.json())
-        .then(data => {
-            document.querySelectorAll('#sidebar-panel fieldset:nth-of-type(2) button').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const funcName = btn.id;
-                    const code = data[funcName];
-                    dynamicPanelHeading.textContent = btn.textContent.trim();
-                    const codeEl = document.getElementById("codeContainer");
-                    if (codeEl) codeEl.textContent = code;
-                    dynamicPanelWrapper.classList.toggle("hidden");
-                });
-            });
-        })
-        .catch(err => console.error("Error loading JSON:", err));
+const jsonConfigs = [
+    { url: "sl.json", fieldsetIndex: 1, error: "Error loading Singly Linear JSON:" },
+    { url: "sc.json", fieldsetIndex: 2, error: "Error loading Singly Circular JSON:" },
+    { url: "dl.json", fieldsetIndex: 3, error: "Error loading Doubly Linear JSON:" },
+    { url: "dc.json", fieldsetIndex: 4, error: "Error loading Doubly Circular JSON:" },
+    { url: "lmisc.json", fieldsetIndex: 5, error: "Error loading Linear Misc JSON:" },
+    { url: "cmisc.json", fieldsetIndex: 6, error: "Error loading Circular Misc JSON:" }
+];
 
-    fetch("circularlinkedfuncs.json")
+jsonConfigs.forEach(cfg => {
+    fetch(cfg.url)
         .then(res => res.json())
         .then(data => {
-            document.querySelectorAll('#sidebar-panel fieldset:nth-of-type(3) button').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const funcName = btn.id;
-                    const code = data[funcName];
-                    dynamicPanelHeading.textContent = btn.textContent.trim();
-                    const codeEl = document.getElementById("codeContainer");
-                    if (codeEl) codeEl.textContent = code;
-                    dynamicPanelWrapper.classList.toggle("hidden");
+            document.querySelectorAll(`#sidebar-panel fieldset:nth-of-type(${cfg.fieldsetIndex}) button`)
+                .forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const funcName = btn.id;
+                        const code = data[funcName];
+                        if (!code) {
+                            console.error(`Function "${funcName}" not found in ${cfg.url}`);
+                            return;
+                        }
+                        dynamicPanelHeading.textContent = btn.textContent.trim();
+                        const codeEl = document.getElementById("codeContainer");
+                        if (codeEl) codeEl.textContent = code;
+                        dynamicPanelWrapper.classList.remove("hidden");
+                    });
                 });
-            });
         })
-        .catch(err => console.error("Error loading circular JSON:", err));
+        .catch(err => console.error(cfg.error, err));
+});
 
-    fetch("misclinkedfuncs.json")
-        .then(res => res.json())
-        .then(data => {
-            document.querySelectorAll('#sidebar-panel fieldset:nth-of-type(1) button').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const funcName = btn.id;
-                    const code = data[funcName];
-                    dynamicPanelHeading.textContent = btn.textContent.trim();
-                    const codeEl = document.getElementById("codeContainer");
-                    if (codeEl) codeEl.textContent = code;
-                    dynamicPanelWrapper.classList.toggle("hidden");
-                });
-            });
-        })
-        .catch(err => console.error("Error loading Misc JSON:", err));
 
     let nodes = [];
     let links = [];
@@ -221,44 +206,35 @@ document.addEventListener('DOMContentLoaded', () => {
                 d.hovered = true;
 
                 if (isBlindMode) {
-                    // --- Blind mode reveal ---
                     d3.select(this).transition().duration(100).style("opacity", 1);
 
-                    // Reveal connected forward nodes
                     g.selectAll(".node").filter(n =>
                         links.some(l => l.source.id === d.id && l.target.id === n.id)
                     ).transition().duration(100).style("opacity", 1);
 
-                    // Reveal connected backward nodes
                     g.selectAll(".node").filter(n =>
                         links.some(l => l.backward && l.source.id === d.id && l.target.id === n.id)
                     ).transition().duration(100).style("opacity", 1);
 
-                    // Reveal outgoing links
                     g.selectAll(".link, .backward-link").filter(l => l.source.id === d.id)
                         .transition().duration(100).style("opacity", 1);
                 } else {
-                    // --- Normal mode highlight ---
                     g.selectAll(".node").interrupt("hover").transition("hover").duration(50)
                         .style("opacity", 0.2);
                     g.selectAll(".link, .backward-link").interrupt("hover").transition("hover").duration(50)
                         .style("opacity", 0.2);
 
-                    // Highlight hovered node
                     g.selectAll(".node").filter(n => n.id === d.id)
                         .transition("hover").duration(50).style("opacity", 1);
 
-                    // Highlight forward-connected nodes (outer rect only)
                     g.selectAll(".node").filter(n =>
                         links.some(l => l.source.id === d.id && l.target.id === n.id)
                     ).select("rect.outer").transition("hover").duration(50).style("opacity", 1);
 
-                    // Highlight backward-connected nodes (outer rect only)
                     g.selectAll(".node").filter(n =>
                         links.some(l => l.backward && l.source.id === d.id && l.target.id === n.id)
                     ).select("rect.outer").transition("hover").duration(50).style("opacity", 1);
 
-                    // Highlight outgoing links
                     g.selectAll(".link, .backward-link").filter(l => l.source.id === d.id)
                         .transition("hover").duration(50).style("opacity", 1);
                 }
@@ -267,22 +243,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 d.hovered = false;
 
                 if (isBlindMode) {
-                    // Hide node again if not start/end
                     if (d !== nodes[0] && d !== nodes[nodes.length - 1]) {
                         d3.select(this).transition().duration(100).style("opacity", 0);
                     }
 
-                    // Hide neighbors
                     g.selectAll(".node").filter(n =>
                         links.some(l => (l.source.id === d.id && l.target.id === n.id) ||
                             (l.backward && l.source.id === d.id && l.target.id === n.id))
                     ).transition().duration(100).style("opacity", 0);
 
-                    // Hide outgoing links
                     g.selectAll(".link, .backward-link").filter(l => l.source.id === d.id)
                         .transition().duration(100).style("opacity", 0);
                 } else {
-                    // Reset everything
                     g.selectAll(".node").interrupt("hover").transition("hover").duration(50).style("opacity", 1);
                     g.selectAll(".link, .backward-link").interrupt("hover").transition("hover").duration(50).style("opacity", 1);
                 }
@@ -303,14 +275,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const circleY = isDoubly ? 80 : 58;
             const circleX = d => 10 + Math.max(60, d.text.length * 8) / 2;
 
-            // --- LINKS ---
             const linkSel = g.selectAll(".link, .backward-link")
                 .data(links, d => d.source.id + "-" + d.target.id + (d.backward ? "-b" : ""));
 
-            // exit
             linkSel.exit().remove();
 
-            // enter
             const linkEnter = linkSel.enter()
                 .append("line")
                 .attr("class", d => d.backward ? "backward-link" : "link")
@@ -318,7 +287,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 .attr("marker-end", "url(#arrow)")
                 .style("opacity", d => (isBlindMode ? 0 : 1));
 
-            // merge
             const allLinks = linkEnter.merge(linkSel);
             allLinks.each(function (d, i) {
                 const line = d3.select(this);
@@ -343,13 +311,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     .attr("stroke", `url(#${gradId})`);
             });
 
-            // --- NODES ---
             const nodeSel = g.selectAll(".node")
                 .data(nodes, d => d.id);
 
             nodeSel.attr("transform", d => `translate(${d.x},${d.y})`);
 
-            // --- POINTERS ---
             g.selectAll(".start-pointer, .end-pointer, .null-pointer").remove();
 
             if (nodes.length > 0) {
@@ -361,20 +327,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const leftCircleX = circleXVal(startNode) - gap / 2;
                 const rightCircleX = circleXVal(endNode) + gap / 2;
 
-                // Gradient for null pointers
-                let nullGrad = defs.select("#null-pointer-gradient");
-                if (nullGrad.empty()) {
-                    nullGrad = defs.append("linearGradient")
-                        .attr("id", "null-pointer-gradient")
-                        .attr("gradientUnits", "userSpaceOnUse");
-                    nullGrad.append("stop").attr("offset", "0%").attr("stop-color", "#ff4d4d");
-                    nullGrad.append("stop").attr("offset", "40%").attr("stop-color", "white");
-
-                }
-
                 if (nodes.length === 1) {
-                    // Single node
-                    // Start pointer (solid)
                     g.append("line")
                         .attr("class", "start-pointer")
                         .attr("x1", startNode.x + leftCircleX - 50)
@@ -393,7 +346,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         .attr("text-anchor", "middle")
                         .text("Start");
 
-                    // End pointer (solid)
                     g.append("line")
                         .attr("class", "end-pointer")
                         .attr("x1", startNode.x + leftCircleX)
@@ -412,14 +364,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         .attr("text-anchor", "middle")
                         .text("End");
 
-                    // Null pointer with gradient
                     g.append("line")
                         .attr("class", "null-pointer")
                         .attr("x1", startNode.x + rightCircleX)
                         .attr("y1", startNode.y + circleY)
                         .attr("x2", startNode.x + rightCircleX + 50)
                         .attr("y2", startNode.y + circleY)
-                        .attr("stroke", "url(#null-pointer-gradient)")
+                        .attr("stroke", "white")
                         .attr("stroke-width", 2)
                         .attr("marker-end", "url(#arrow)");
 
@@ -432,14 +383,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         .text("Null");
 
                     if (isDoubly) {
-                        // Left null pointer gradient
                         g.append("line")
                             .attr("class", "null-pointer")
                             .attr("x1", startNode.x + leftCircleX - 5)
                             .attr("y1", startNode.y + 20)
                             .attr("x2", startNode.x + leftCircleX - 50)
                             .attr("y2", startNode.y + 20)
-                            .attr("stroke", "url(#null-pointer-gradient)")
+                            .attr("stroke", "white")
                             .attr("stroke-width", 2)
                             .attr("marker-end", "url(#arrow)");
 
@@ -452,8 +402,6 @@ document.addEventListener('DOMContentLoaded', () => {
                             .text("Null");
                     }
                 } else {
-                    // Multiple nodes
-                    // Start pointer (solid)
                     g.append("line")
                         .attr("class", "start-pointer")
                         .attr("x1", startNode.x + leftCircleX)
@@ -472,7 +420,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         .attr("text-anchor", "middle")
                         .text("Start");
 
-                    // End pointer (solid)
                     g.append("line")
                         .attr("class", "end-pointer")
                         .attr("x1", endNode.x + leftCircleX)
@@ -491,7 +438,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         .attr("text-anchor", "middle")
                         .text("End");
 
-                    // Null pointer right (gradient)
                     if (!isCircular) {
                         g.append("line")
                             .attr("class", "null-pointer")
@@ -499,7 +445,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             .attr("y1", endNode.y + circleY)
                             .attr("x2", endNode.x + rightCircleX + 50)
                             .attr("y2", endNode.y + circleY)
-                            .attr("stroke", "url(#null-pointer-gradient)")
+                            .attr("stroke", "white")
                             .attr("stroke-width", 2)
                             .attr("marker-end", "url(#arrow)");
 
@@ -512,7 +458,6 @@ document.addEventListener('DOMContentLoaded', () => {
                             .text("Null");
                     }
 
-                    // Null pointer left (gradient) for doubly linked
                     if (isDoubly && !isCircular) {
                         g.append("line")
                             .attr("class", "null-pointer")
@@ -520,7 +465,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             .attr("y1", startNode.y + 20)
                             .attr("x2", startNode.x + leftCircleX - 50)
                             .attr("y2", startNode.y + 20)
-                            .attr("stroke", "url(#null-pointer-gradient)")
+                            .attr("stroke", "white")
                             .attr("stroke-width", 2)
                             .attr("marker-end", "url(#arrow)");
 
@@ -535,7 +480,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // --- HIGHLIGHT ---
             g.selectAll(".node.highlight").selectAll("rect, circle")
                 .transition().duration(400).style("opacity", 0.3)
                 .transition().duration(400).style("opacity", 1)
@@ -694,7 +638,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }, timeout);
     }
 
-    // --- INSERTION DELETION ---
     function insertNodeStart() {
         const data = datainput.value.trim();
         if (!data) return logStatus("Please enter a value to insert", "error");
@@ -843,7 +786,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const index = nodes.indexOf(node);
                 const dataCellWidth = Math.max(60, node.text.length * 8);
 
-                // Adjust position depending on list type
                 const markerX = node.x + 10 + dataCellWidth / 2;
                 const markerY = node.y - (isDoubly ? 20 : 10);
 
@@ -864,23 +806,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     .remove();
             });
 
-            // highlight nodes
             g.selectAll(".node.highlight").selectAll("rect, circle")
                 .classed("flash", true);
 
-            // highlight links
             g.selectAll(".link, .backward-link")
                 .filter(l => matchingNodes.some(n => l.source.id === n.id))
                 .classed("flash", true);
 
-            // cleanup after animation ends
             setTimeout(() => {
                 g.selectAll(".node.highlight")
                     .classed("highlight", false)
                     .selectAll("rect, circle").classed("flash", false);
 
                 g.selectAll(".link, .backward-link").classed("flash", false);
-            }, 3 * 800); // match cycles*duration
+            }, 3 * 800);
 
             logStatus(
                 `Found ${matchingNodes.length} ${matchingNodes.length === 1 ? "instance" : "instances"} of "${value}"`,
@@ -930,14 +869,13 @@ document.addEventListener('DOMContentLoaded', () => {
     function toggleBlindMode() {
         isBlindMode = !isBlindMode;
 
-        const bgRect = d3.select("svg rect"); // selects your full-size rect
+        const bgRect = d3.select("svg rect");
 
         if (isBlindMode) {
             g.selectAll(".node").style("opacity", 0);
             g.selectAll(".link, .backward-link").style("opacity", 0);
 
-            // Change background fill
-            bgRect.attr("fill", "#12121f"); // dark color
+            bgRect.attr("fill", "#12121f");
 
             logStatus("Blind mode enabled: Only start/end pointers visible", "info");
             toggleBlindModeBtn.textContent = "Blind: ON";
@@ -945,7 +883,6 @@ document.addEventListener('DOMContentLoaded', () => {
             g.selectAll(".node").style("opacity", 1);
             g.selectAll(".link, .backward-link").style("opacity", 1);
 
-            // Restore grid pattern
             bgRect.attr("fill", "url(#grid)");
 
             logStatus("Blind mode disabled", "info");
@@ -987,8 +924,6 @@ document.addEventListener('DOMContentLoaded', () => {
         dynamicPanelWrapper.classList.add("hidden");
     });
 
-
-
     document.getElementById("copyCodeBtn").addEventListener("click", async () => {
         const codeEl = document.getElementById("codeContainer");
         if (!codeEl) return logStatus("Code container not found", "error");
@@ -1006,11 +941,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     svg.on("mousedown", (event) => {
-        if (event.button === 1) { // middle mouse button
+        if (event.button === 1) {
             event.preventDefault();
             if (nodes.length === 0) return;
 
-            // Compute node bounding box
             const minX = d3.min(nodes, d => d.x);
             const maxX = d3.max(nodes, d => d.x + Math.max(60, d.text.length * 8) + 20);
             const minY = d3.min(nodes, d => d.y);
@@ -1022,16 +956,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const svgWidth = svg.node().clientWidth;
             const svgHeight = svg.node().clientHeight;
 
-            // Determine scale, respecting max zoom of 3
             const scale = Math.min(svgWidth / (width + 100), svgHeight / (height + 100), 3);
 
-            // Center the bounding box in the SVG
             const translateX = (svgWidth - scale * (minX + maxX)) / 2;
             const translateY = (svgHeight - scale * (minY + maxY)) / 2;
 
             const t = d3.zoomIdentity.translate(translateX, translateY).scale(scale);
 
-            // Smooth transition to the new transform
             svg.transition()
                 .duration(750)
                 .call(zoom.transform, t);

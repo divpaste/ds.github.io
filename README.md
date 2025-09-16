@@ -4,7 +4,7 @@
 This project is an **interactive Linked List Visualizer** built using **HTML, CSS, and D3.js**.  
 It provides a graphical interface to create, manipulate, and visualize operations on different types of linked lists.  
 
-The tool is designed for **students, educators, and developers** to better understand how linked list operations work step by step.  
+The tool is designed for **students, educators, and developers** to gain a deeper understanding of how linked list operations work step by step.  
 
 ---
 
@@ -57,7 +57,7 @@ The tool is designed for **students, educators, and developers** to better under
 ## How to Use  
 1. Go to [Linked List Visualizer (GitHub Pages)](divpaste.github.io/ds.github.io/)
 3. Use the **control panel** at the bottom to perform insertions, deletions, and searches.  
-4. Use the **sidebar** to view corresponding code for each operation.  
+4. Use the **sidebar** to view the corresponding code for each operation.  
 5. Toggle between list types (linear, circular, doubly) using the dedicated buttons.  
 6. Clear the canvas if you want to reset.  
 
@@ -65,7 +65,6 @@ The tool is designed for **students, educators, and developers** to better under
 
 ## Future Improvements  
 - Add step-by-step execution mode  
-- Export list state as JSON  
 - Mobile-friendly layout  
 
 ---
